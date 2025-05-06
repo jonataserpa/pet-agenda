@@ -1,0 +1,133 @@
+---
+description: 
+globs: 
+---
+# ADR 001 - Arquitetura para Sistema de Agendamento de Banho e Tosa de Pets
+
+## Status
+Proposto
+
+## Contexto
+
+Estamos desenvolvendo um sistema de agendamento de serviços (banho e tosa) para pets, que precisa respeitar regras de negócio complexas. Os objetivos principais incluem:
+
+- Garantir integridade nos agendamentos (sem conflitos de horário e respeitando feriados);
+- Validar clientes com regras específicas;
+- Fornecer uma API RESTful segura com autenticação JWT;
+- Seguir a arquitetura MVC para facilitar manutenção e evolução;
+- Garantir cobertura de testes unitários na camada de serviços;
+- Facilitar ambiente de desenvolvimento local com banco de dados containerizado;
+- Disponibilizar documentação interativa da API.
+
+O sistema precisa suportar:
+- Restrições de horário e feriados;
+- Lógicas de precificação dinâmica (combos de serviços);
+- Validações específicas de clientes e pets;
+- Controle de concorrência para evitar agendamentos duplicados;
+- Consultas agregadas e dados em tempo real.
+
+## Decisão
+
+A equipe decidiu implementar o sistema como um **monolito modular baseado em MVC**, utilizando as seguintes tecnologias:
+
+- **Node.js com TypeScript** para desenvolvimento;
+- **Prisma ORM** para abstração e controle de banco de dados;
+- **MariaDB** como banco de dados relacional;
+- **Swagger (OpenAPI)** para documentação da API;
+- **Docker Compose** para orquestrar o ambiente de desenvolvimento do banco de dados.
+
+### Organização das Camadas
+
+- **Controller**: Entrada e validação de dados.
+- **Model**: Entidade.
+- **Service**: Implementação das regras de negócio.
+- **Repository**: Comunicação com o banco de dados.
+
+### Principais Endpoints da API RESTful
+
+- `/login` — Autenticação JWT
+- `/scheduling` — CRUD + regras de agendamento
+- `/customers` — CRUD + validações específicas
+- `/pet` — CRUD + validações específicas
+- `/services` — CRUD + precificação dinâmica por combo
+- `/reports` — Dados agregados
+- `/dashboard` — Dados em tempo real
+
+### Regras de Negócio Importantes
+
+- Agendamentos não podem conflitar ou ocorrer em datas de feriados.
+- Combos de serviços ajustam o preço automaticamente.
+- Não é permitido clientes com e-mails duplicados.
+
+### Estratégias para Tratamento de Concorrência
+
+- Uso de **transações atômicas com Prisma**.
+- Índices únicos no banco de dados para `(date, time)` garantindo unicidade.
+- Validações de domínio antes da persistência.
+
+### Testes
+
+- Testes unitários obrigatórios na camada de serviços.
+
+## Ferramentas Adicionais
+
+### Docker Compose
+
+Para padronizar o ambiente de desenvolvimento e facilitar a inicialização do banco de dados, adotaremos o seguinte `docker-compose.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  mariadb:
+    image: mariadb:11
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: petagenda
+      MYSQL_USER: petuser
+      MYSQL_PASSWORD: petpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+volumes:
+  mariadb_data:
+
+
+## Estrutura de Diretórios
+
+```bash
+pet-agenda/
+├── src/
+│   ├── controller/
+│   │   ├── login/
+│   │   ├── scheduling/
+│   │   ├── customers/
+│   │   ├── pet/
+│   │   ├── services/
+│   │   ├── reports/
+│   │   ├── dashboard/
+│   ├── services/
+│   │   ├── loginService/
+│   │   ├── schedulingService/
+│   │   ├── customersService/
+│   │   ├── petService/
+│   │   ├── servicesService/
+│   │   ├── reportsService/
+│   │   ├── dashboardService/
+│   ├── infrastructure/
+│   │   ├── database/
+│   │   │   ├── prisma/
+│   │   │   │   ├── client.ts
+│   │   │   │   └── schema.prisma
+│   │   └── middlewares/
+│   ├── tests/
+│   │   ├── unit/
+│   │   │   └── domain/
+│   ├── main.ts
+├── .env
+├── package.json
+├── tsconfig.json
+└── README.md
