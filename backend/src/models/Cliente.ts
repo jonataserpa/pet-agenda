@@ -5,6 +5,7 @@ export interface Cliente {
   nome: string;
   email: string;
   telefone: string;
+  senha: string;
   pets?: Pet[];
 }
 

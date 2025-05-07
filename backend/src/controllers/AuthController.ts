@@ -18,19 +18,17 @@ export class AuthController {
         return res.status(400).json({ error: 'Email e senha são obrigatórios' });
       }
 
-      // No contexto deste sistema, vamos simplificar e autenticar direto com o email
-      // Em um sistema real, adicionaríamos um campo de senha na tabela de Cliente
       const cliente = await this.clienteRepository.findByEmail(email);
 
       if (!cliente) {
         return res.status(401).json({ error: 'Credenciais inválidas' });
       }
 
-      // Em um sistema real, faríamos a verificação da senha com bcrypt
-      // const senhaCorreta = await bcrypt.compare(senha, cliente.senhaCriptografada);
-      // if (!senhaCorreta) {
-      //   return res.status(401).json({ error: 'Credenciais inválidas' });
-      // }
+      // Verificar senha usando bcrypt
+      const senhaCorreta = await bcrypt.compare(senha, cliente.senha);
+      if (!senhaCorreta) {
+        return res.status(401).json({ error: 'Credenciais inválidas' });
+      }
 
       // Gerando token JWT
       const jwtSecret = process.env.JWT_SECRET || 'default-secret-key';

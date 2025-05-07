@@ -12,6 +12,7 @@ model Cliente {
   nome     String
   email    String @unique
   telefone String
+  senha    String
   pets     Pet[]
 
   @@map("clientes")

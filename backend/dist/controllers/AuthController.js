@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const ClienteRepository_1 = require("../repositories/ClienteRepository");
+const bcrypt_1 = __importDefault(require("bcrypt"));
 class AuthController {
     constructor() {
         this.clienteRepository = new ClienteRepository_1.ClienteRepository();
@@ -26,17 +27,15 @@ class AuthController {
                 if (!email || !senha) {
                     return res.status(400).json({ error: 'Email e senha são obrigatórios' });
                 }
-                // No contexto deste sistema, vamos simplificar e autenticar direto com o email
-                // Em um sistema real, adicionaríamos um campo de senha na tabela de Cliente
                 const cliente = yield this.clienteRepository.findByEmail(email);
                 if (!cliente) {
                     return res.status(401).json({ error: 'Credenciais inválidas' });
                 }
-                // Em um sistema real, faríamos a verificação da senha com bcrypt
-                // const senhaCorreta = await bcrypt.compare(senha, cliente.senhaCriptografada);
-                // if (!senhaCorreta) {
-                //   return res.status(401).json({ error: 'Credenciais inválidas' });
-                // }
+                // Verificar senha usando bcrypt
+                const senhaCorreta = yield bcrypt_1.default.compare(senha, cliente.senha);
+                if (!senhaCorreta) {
+                    return res.status(401).json({ error: 'Credenciais inválidas' });
+                }
                 // Gerando token JWT
                 const jwtSecret = process.env.JWT_SECRET || 'default-secret-key';
                 const token = jsonwebtoken_1.default.sign({ id: cliente.id, email: cliente.email }, jwtSecret, { expiresIn: '8h' });

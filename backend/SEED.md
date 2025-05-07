@@ -24,16 +24,19 @@ O script de seed criará os seguintes dados:
 1. **João Silva**
    - Email: joao@email.com
    - Telefone: (11) 99999-1111
+   - Senha: senha123
    - Pets: Rex (Cachorro), Nina (Gato)
 
 2. **Maria Souza**
    - Email: maria@email.com
    - Telefone: (11) 99999-2222
+   - Senha: senha123
    - Pets: Thor (Cachorro)
 
 3. **Pedro Oliveira**
    - Email: pedro@email.com
    - Telefone: (11) 99999-3333
+   - Senha: senha123
    - Pets: Mel (Cachorro)
 
 ### Pets

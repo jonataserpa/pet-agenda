@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { Cliente } from '../models/Cliente';
+import bcrypt from 'bcrypt';
 
 export class ClienteRepository {
   private prisma: PrismaClient;
@@ -27,17 +28,31 @@ export class ClienteRepository {
   async create(cliente: Cliente): Promise<Cliente> {
     const { pets, ...clienteData } = cliente;
     
+    // Criptografar a senha
+    const hashedSenha = await bcrypt.hash(clienteData.senha, 10);
+    
     return this.prisma.cliente.create({
-      data: clienteData,
+      data: {
+        ...clienteData,
+        senha: hashedSenha
+      },
     });
   }
 
   async update(id: number, cliente: Cliente): Promise<Cliente> {
     const { pets, ...clienteData } = cliente;
     
+    // Se a senha for fornecida, criptografá-la
+    let dadosAtualizados = { ...clienteData };
+    
+    if (clienteData.senha) {
+      const hashedSenha = await bcrypt.hash(clienteData.senha, 10);
+      dadosAtualizados = { ...dadosAtualizados, senha: hashedSenha };
+    }
+    
     return this.prisma.cliente.update({
       where: { id },
-      data: clienteData,
+      data: dadosAtualizados,
     });
   }
 

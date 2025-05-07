@@ -55,8 +55,13 @@ const options: swaggerJsdoc.Options = {
               description: 'Telefone do cliente',
               example: '(11) 99999-9999',
             },
+            senha: {
+              type: 'string',
+              description: 'Senha do cliente (criptografada quando armazenada)',
+              example: 'senha123',
+            },
           },
-          required: ['nome', 'email', 'telefone'],
+          required: ['nome', 'email', 'telefone', 'senha'],
         },
         Pet: {
           type: 'object',
@@ -164,7 +169,7 @@ const options: swaggerJsdoc.Options = {
             },
             senha: {
               type: 'string',
-              description: 'Senha do cliente',
+              description: 'Senha do cliente (em texto puro para autenticação)',
               example: 'senha123',
             },
           },

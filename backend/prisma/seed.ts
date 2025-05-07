@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -14,12 +15,16 @@ async function main() {
 
   console.log('Dados antigos removidos.');
 
+  // Criptografar senha padrão para todos os clientes
+  const senhaComum = await bcrypt.hash('senha123', 10);
+
   // Criar clientes
   const cliente1 = await prisma.cliente.create({
     data: {
       nome: 'João Silva',
       email: 'joao@email.com',
-      telefone: '(11) 99999-1111'
+      telefone: '(11) 99999-1111',
+      senha: senhaComum
     }
   });
 
@@ -27,7 +32,8 @@ async function main() {
     data: {
       nome: 'Maria Souza',
       email: 'maria@email.com',
-      telefone: '(11) 99999-2222'
+      telefone: '(11) 99999-2222',
+      senha: senhaComum
     }
   });
 
@@ -35,7 +41,8 @@ async function main() {
     data: {
       nome: 'Pedro Oliveira',
       email: 'pedro@email.com',
-      telefone: '(11) 99999-3333'
+      telefone: '(11) 99999-3333',
+      senha: senhaComum
     }
   });
 
