@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `clientes` ADD COLUMN `observacao` VARCHAR(191) NULL,
+    ADD COLUMN `status` ENUM('ATIVO', 'INATIVO') NULL DEFAULT 'ATIVO';

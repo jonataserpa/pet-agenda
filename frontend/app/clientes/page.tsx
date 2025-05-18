@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/ui/data-table"
@@ -9,57 +9,30 @@ import { Pagination } from "@/components/ui/pagination"
 import { ClientFormModal } from "@/components/clients/client-form-modal"
 import { Plus, Search, Filter, Pencil, Trash } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-
-// Dados iniciais de exemplo
-const initialClients = [
-  {
-    id: "#12345",
-    name: "João Silva",
-    email: "joao.silva@email.com",
-    phone: "(11) 98765-4321",
-    status: "Ativo",
-    petName: "Rex",
-    notes: "Cliente frequente, prefere atendimento pela manhã",
-    avatar: "/placeholder.svg",
-  },
-  {
-    id: "#12346",
-    name: "Maria Santos",
-    email: "maria.santos@email.com",
-    phone: "(21) 97654-3210",
-    status: "Ativo",
-    petName: "Luna",
-    notes: "Pet com histórico de alergias",
-    avatar: "/placeholder.svg",
-  },
-  {
-    id: "#12347",
-    name: "Carlos Oliveira",
-    email: "carlos.oliveira@email.com",
-    phone: "(31) 96543-2109",
-    status: "Inativo",
-    petName: "Thor",
-    notes: "",
-    avatar: "/placeholder.svg",
-  },
-  {
-    id: "#12348",
-    name: "Ana Pereira",
-    email: "ana.pereira@email.com",
-    phone: "(41) 95432-1098",
-    status: "Pendente",
-    petName: "Mia",
-    notes: "Primeira consulta agendada",
-    avatar: "/placeholder.svg",
-  },
-]
+import { clientService } from "@/lib/clientService"
 
 export default function ClientesPage() {
-  const [clients, setClients] = useState(initialClients)
+  const [clients, setClients] = useState<any[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedClient, setSelectedClient] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const { toast } = useToast()
+
+  useEffect(() => {
+    async function fetchClients() {
+      try {
+        const data = await clientService.list()
+        setClients(data)
+      } catch (error) {
+        toast({
+          title: "Erro ao carregar clientes",
+          description: "Não foi possível buscar os clientes do servidor.",
+          variant: "destructive",
+        })
+      }
+    }
+    fetchClients()
+  }, [toast])
 
   const handleOpenModal = () => {
     setSelectedClient(null)
@@ -112,10 +85,10 @@ export default function ClientesPage() {
   const filteredClients = clients.filter((client) => {
     const searchLower = searchTerm.toLowerCase()
     return (
-      client.name.toLowerCase().includes(searchLower) ||
-      client.email.toLowerCase().includes(searchLower) ||
-      client.phone.includes(searchTerm) ||
-      client.petName.toLowerCase().includes(searchLower)
+      client?.nome.toLowerCase().includes(searchLower) ||
+      client?.email.toLowerCase().includes(searchLower) ||
+      client?.telefone.includes(searchTerm)
+      // client?.petsame.toLowerCase().includes(searchLower)
     )
   })
 

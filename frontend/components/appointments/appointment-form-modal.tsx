@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
+import { appointmentService } from "@/lib/appointmentService"
 
 // Lista de serviços disponíveis
 const availableServices = [
@@ -151,20 +152,25 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
     return isValid
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!validateForm()) return
 
-    // Gerar ID aleatório para novos agendamentos
     const newAppointment = {
       ...formData,
-      id: appointment?.id || `#${Math.floor(10000 + Math.random() * 90000)}`,
+      id: appointment?.id || undefined,
       status: appointment?.status || "Pendente",
     }
 
-    onSave(newAppointment)
-    onClose()
+    try {
+      const savedAppointment = await appointmentService.save(newAppointment)
+      onSave(savedAppointment)
+      onClose()
+    } catch (error) {
+      // TODO: adicionar tratamento de erro
+      console.error(error)
+    }
   }
 
   const formatPhoneNumber = (value: string) => {

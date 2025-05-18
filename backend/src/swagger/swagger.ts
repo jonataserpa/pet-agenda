@@ -60,6 +60,17 @@ const options: swaggerJsdoc.Options = {
               description: 'Senha do cliente (criptografada quando armazenada)',
               example: 'senha123',
             },
+            status: {
+              type: 'string',
+              description: 'Status do cliente',
+              enum: ['ATIVO', 'INATIVO'],
+              example: 'ATIVO',
+            },
+            observacao: {
+              type: 'string',
+              description: 'Observações gerais sobre o cliente',
+              example: 'Cliente prefere contato por WhatsApp',
+            },
           },
           required: ['nome', 'email', 'telefone', 'senha'],
         },

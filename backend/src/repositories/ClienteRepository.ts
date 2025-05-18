@@ -2,6 +2,15 @@ import { PrismaClient } from '@prisma/client';
 import { Cliente } from '../models/Cliente';
 import bcrypt from 'bcrypt';
 
+function mapPrismaClienteToModel(prismaCliente: any): Cliente {
+  if (!prismaCliente) return prismaCliente;
+  return {
+    ...prismaCliente,
+    status: prismaCliente.status ?? undefined,
+    observacao: prismaCliente.observacao ?? undefined,
+  };
+}
+
 export class ClienteRepository {
   private prisma: PrismaClient;
 
@@ -10,33 +19,40 @@ export class ClienteRepository {
   }
 
   async findAll(): Promise<Cliente[]> {
-    return this.prisma.cliente.findMany();
+    const clientes = await this.prisma.cliente.findMany();
+    return clientes.map(mapPrismaClienteToModel);
   }
 
   async findById(id: number): Promise<Cliente | null> {
-    return this.prisma.cliente.findUnique({
+    const cliente = await this.prisma.cliente.findUnique({
       where: { id },
     });
+    return mapPrismaClienteToModel(cliente);
   }
 
   async findByEmail(email: string): Promise<Cliente | null> {
-    return this.prisma.cliente.findUnique({
+    const cliente = await this.prisma.cliente.findUnique({
       where: { email },
     });
+    return mapPrismaClienteToModel(cliente);
   }
 
   async create(cliente: Cliente): Promise<Cliente> {
     const { pets, ...clienteData } = cliente;
-    
-    // Criptografar a senha
+
+    if (!clienteData.senha) {
+      clienteData.senha = 'senha123';
+    }
+
     const hashedSenha = await bcrypt.hash(clienteData.senha, 10);
     
-    return this.prisma.cliente.create({
+    const novoCliente = await this.prisma.cliente.create({
       data: {
         ...clienteData,
         senha: hashedSenha
       },
     });
+    return mapPrismaClienteToModel(novoCliente);
   }
 
   async update(id: number, cliente: Cliente): Promise<Cliente> {
@@ -50,10 +66,11 @@ export class ClienteRepository {
       dadosAtualizados = { ...dadosAtualizados, senha: hashedSenha };
     }
     
-    return this.prisma.cliente.update({
+    const clienteAtualizado = await this.prisma.cliente.update({
       where: { id },
       data: dadosAtualizados,
     });
+    return mapPrismaClienteToModel(clienteAtualizado);
   }
 
   async delete(id: number): Promise<boolean> {
@@ -64,9 +81,10 @@ export class ClienteRepository {
   }
 
   async findWithPets(id: number): Promise<Cliente | null> {
-    return this.prisma.cliente.findUnique({
+    const cliente = await this.prisma.cliente.findUnique({
       where: { id },
       include: { pets: true },
     });
+    return mapPrismaClienteToModel(cliente);
   }
 } 

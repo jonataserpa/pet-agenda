@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
+import { clientService } from "@/lib/clientService"
 
 interface ClientFormModalProps {
   isOpen: boolean
@@ -18,12 +19,12 @@ interface ClientFormModalProps {
   onSave: (client: any) => void
   client?: {
     id?: string
-    name: string
+    nome: string
     email: string
-    phone: string
+    telefone: string
     status: string
-    petName?: string
-    notes?: string
+    pets?: []
+    observacao?: string
     avatar?: string
   }
 }
@@ -32,12 +33,12 @@ export function ClientFormModal({ isOpen, onClose, onSave, client }: ClientFormM
   const isEditing = !!client?.id
 
   const [formData, setFormData] = useState({
-    name: client?.name || "",
+    nome: client?.nome || "",
     email: client?.email || "",
-    phone: client?.phone || "",
+    telefone: client?.telefone || "",
     status: client?.status || "Ativo",
-    petName: client?.petName || "",
-    notes: client?.notes || "",
+    pets: [],
+    observacao: client?.observacao || "",
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -72,7 +73,7 @@ export function ClientFormModal({ isOpen, onClose, onSave, client }: ClientFormM
     let error = ""
 
     switch (field) {
-      case "name":
+      case "nome":
         if (!value.trim()) error = "Nome é obrigatório"
         break
       case "email":
@@ -81,16 +82,6 @@ export function ClientFormModal({ isOpen, onClose, onSave, client }: ClientFormM
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
           error = "Email inválido"
         }
-        break
-      case "phone":
-        if (!value.trim()) {
-          error = "Telefone é obrigatório"
-        } else if (!/^$$\d{2}$$\s\d{4,5}-\d{4}$/.test(value)) {
-          error = "Formato inválido. Use (00) 00000-0000"
-        }
-        break
-      case "petName":
-        if (!value.trim()) error = "Nome do pet é obrigatório"
         break
       default:
         break
@@ -108,7 +99,7 @@ export function ClientFormModal({ isOpen, onClose, onSave, client }: ClientFormM
   }
 
   const validateForm = () => {
-    const requiredFields = ["name", "email", "phone", "petName"]
+    const requiredFields = ["nome", "email", "telefone"]
     let isValid = true
 
     // Marcar todos os campos obrigatórios como tocados
@@ -132,20 +123,25 @@ export function ClientFormModal({ isOpen, onClose, onSave, client }: ClientFormM
     return isValid
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!validateForm()) return
 
-    // Gerar ID aleatório para novos clientes
     const newClient = {
       ...formData,
-      id: client?.id || `#${Math.floor(10000 + Math.random() * 90000)}`,
-      avatar: client?.avatar || "/placeholder.svg",
+      id: client?.id || undefined,
+      // avatar: client?.avatar || "/placeholder.svg",
     }
 
-    onSave(newClient)
-    onClose()
+    try {
+      const savedClient = await clientService.save(newClient)
+      onSave(savedClient)
+      onClose()
+    } catch (error) {
+      // TODO: adicionar tratamento de erro
+      console.error(error)
+    }
   }
 
   const formatPhoneNumber = (value: string) => {
@@ -164,7 +160,7 @@ export function ClientFormModal({ isOpen, onClose, onSave, client }: ClientFormM
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedValue = formatPhoneNumber(e.target.value)
-    handleChange("phone", formattedValue)
+    handleChange("telefone", formattedValue)
   }
 
   return (
@@ -179,18 +175,18 @@ export function ClientFormModal({ isOpen, onClose, onSave, client }: ClientFormM
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name" className={errors.name && touched.name ? "text-red-500" : ""}>
+              <Label htmlFor="nome" className={errors.nome && touched.nome ? "text-red-500" : ""}>
                 Nome*
               </Label>
               <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-                onBlur={() => handleBlur("name")}
-                className={cn(errors.name && touched.name ? "border-red-500 focus-visible:ring-red-500" : "")}
+                id="nome"
+                value={formData.nome}
+                onChange={(e) => handleChange("nome", e.target.value)}
+                onBlur={() => handleBlur("nome")}
+                className={cn(errors.nome && touched.nome ? "border-red-500 focus-visible:ring-red-500" : "")}
                 required
               />
-              {errors.name && touched.name && <p className="text-xs text-red-500">{errors.name}</p>}
+              {errors.nome && touched.nome && <p className="text-xs text-red-500">{errors.nome}</p>}
             </div>
 
             <div className="grid gap-2">
@@ -210,22 +206,22 @@ export function ClientFormModal({ isOpen, onClose, onSave, client }: ClientFormM
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="phone" className={errors.phone && touched.phone ? "text-red-500" : ""}>
+              <Label htmlFor="telefone" className={errors.telefone && touched.telefone ? "text-red-500" : ""}>
                 Telefone*
               </Label>
               <Input
-                id="phone"
-                value={formData.phone}
+                id="telefone"
+                value={formData.telefone}
                 onChange={handlePhoneChange}
-                onBlur={() => handleBlur("phone")}
+                onBlur={() => handleBlur("telefone")}
                 placeholder="(00) 00000-0000"
-                className={cn(errors.phone && touched.phone ? "border-red-500 focus-visible:ring-red-500" : "")}
+                className={cn(errors.telefone && touched.telefone ? "border-red-500 focus-visible:ring-red-500" : "")}
                 required
               />
-              {errors.phone && touched.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
+              {errors.telefone && touched.telefone && <p className="text-xs text-red-500">{errors.telefone}</p>}
             </div>
 
-            <div className="grid gap-2">
+            {/* <div className="grid gap-2">
               <Label htmlFor="petName" className={errors.petName && touched.petName ? "text-red-500" : ""}>
                 Nome do Pet*
               </Label>
@@ -238,7 +234,7 @@ export function ClientFormModal({ isOpen, onClose, onSave, client }: ClientFormM
                 required
               />
               {errors.petName && touched.petName && <p className="text-xs text-red-500">{errors.petName}</p>}
-            </div>
+            </div> */}
 
             <div className="grid gap-2">
               <Label htmlFor="status">Status*</Label>
@@ -247,19 +243,18 @@ export function ClientFormModal({ isOpen, onClose, onSave, client }: ClientFormM
                   <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Ativo">Ativo</SelectItem>
-                  <SelectItem value="Inativo">Inativo</SelectItem>
-                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="ATIVO">Ativo</SelectItem>
+                  <SelectItem value="INATIVO">Inativo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="notes">Observações</Label>
+              <Label htmlFor="observacao">Observações</Label>
               <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => handleChange("notes", e.target.value)}
+                id="observacao"
+                value={formData.observacao}
+                onChange={(e) => handleChange("observacao", e.target.value)}
                 placeholder="Informações adicionais sobre o cliente ou pet"
                 className="min-h-[80px]"
               />

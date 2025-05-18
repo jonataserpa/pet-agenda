@@ -1,6 +1,15 @@
 import { PrismaClient } from '@prisma/client';
 import { Pet } from '../models/Pet';
 
+function mapPrismaClienteToModel(prismaCliente: any) {
+  if (!prismaCliente) return prismaCliente;
+  return {
+    ...prismaCliente,
+    status: prismaCliente.status ?? undefined,
+    observacao: prismaCliente.observacao ?? undefined,
+  };
+}
+
 export class PetRepository {
   private prisma: PrismaClient;
 
@@ -49,10 +58,15 @@ export class PetRepository {
   }
 
   async findWithCliente(id: number): Promise<Pet | null> {
-    return this.prisma.pet.findUnique({
+    const pet = await this.prisma.pet.findUnique({
       where: { id },
       include: { cliente: true },
     });
+    if (!pet) return pet;
+    return {
+      ...pet,
+      cliente: mapPrismaClienteToModel(pet.cliente),
+    };
   }
 
   async findWithAgendamentos(id: number): Promise<Pet | null> {
