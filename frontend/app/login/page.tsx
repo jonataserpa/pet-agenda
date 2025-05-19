@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Building, Mail, Lock, Eye, EyeOff } from "lucide-react"
@@ -10,6 +10,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/contexts/auth-context"
+import { loginService } from "@/lib/loginService"
+import { useToast } from "@/components/ui/use-toast"
+import axios from "axios"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -21,6 +24,7 @@ export default function LoginPage() {
 
   const router = useRouter()
   const { login } = useAuth()
+  const { toast } = useToast()
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {}
@@ -39,18 +43,38 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!validateForm()) return
-
     setIsSubmitting(true)
-
-    const success = await login(email, password)
-
-    if (success) {
-      router.push("/")
+    console.log("LoginPage: handleSubmit iniciado. Email:", email);
+    
+    try {
+      console.log("LoginPage: Tentando fazer login para:", email);
+      
+      // Usar o método login do contexto de autenticação
+      const success = await login(email, password);
+      
+      if (success) {
+        console.log(`LoginPage: Login bem-sucedido para ${email}. Redirecionando...`);
+        
+        // Para garantir o redirecionamento após login, forçamos o recarregamento completo.
+        // Isto garante que os cookies serão enviados em todas as requisições subsequentes.
+        window.location.href = '/';
+      } else {
+        console.error("LoginPage: Login falhou");
+        setErrors({ email: 'Email ou senha inválidos', password: 'Email ou senha inválidos' });
+      }
+    } catch (error) {
+      console.error("LoginPage: Erro no login:", error);
+      
+      if (axios.isAxiosError(error)) {
+        console.error("LoginPage: Detalhes do erro:", error.response?.data || error.message);
+      }
+      
+      setErrors({ email: 'Email ou senha inválidos', password: 'Email ou senha inválidos' });
+    } finally {
+      setIsSubmitting(false);
+      console.log("LoginPage: handleSubmit finalizado.");
     }
-
-    setIsSubmitting(false)
   }
 
   return (
@@ -60,7 +84,7 @@ export default function LoginPage() {
           <div className="bg-gray-900 dark:bg-gray-700 p-3 rounded-lg mb-4">
             <Building className="h-6 w-6 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-center">Gestão Total</h1>
+          <h1 className="text-2xl font-bold text-center">Pet Agenda</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">Acesse sua conta</p>
         </div>
 

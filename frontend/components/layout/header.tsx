@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/contexts/auth-context"
+import { useEffect } from "react"
 
 interface HeaderProps {
   title?: string
@@ -21,12 +22,40 @@ interface HeaderProps {
 
 export function Header({ title, subtitle }: HeaderProps) {
   const { user, logout } = useAuth()
+  
+  // Log para depuração
+  console.log("Header: Estado do usuário:", user);
+  
+  // Log adicional para entender quando o componente é renderizado
+  useEffect(() => {
+    console.log("Header: Componente montado, usuário:", user);
+    // Ver o que está chegando no contexto
+    console.log("Header: Valor de user?", user ? "sim" : "não");
+    if (user) {
+      console.log("Header: Detalhes do usuário:", {
+        id: user.id,
+        name: user.name,
+        email: user.email
+      });
+    }
+  }, [user]);
+
+  // Renderização condicional explícita para debug
+  const renderUserMenu = user !== null;
+  console.log("Header: Vai renderizar menu do usuário?", renderUserMenu);
+  
+  // Log fora dos fragmentos JSX para evitar erros
+  if (renderUserMenu) {
+    console.log("Header: Renderizando menu do usuário");
+  } else {
+    console.log("Header: Renderizando botão de login");
+  }
 
   return (
     <header className="flex items-center justify-between p-4 border-b bg-background">
       <div className="flex items-center gap-4">
         <Link href="/" className="text-xl font-bold">
-          Gestão Total
+          Pet Agenda
         </Link>
         {title && (
           <span className="text-muted-foreground">
@@ -42,7 +71,8 @@ export function Header({ title, subtitle }: HeaderProps) {
           <Bell className="h-5 w-5" />
         </button>
 
-        {user ? (
+        {/* Adicionando verificação extra para debug */}
+        {renderUserMenu ? (
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2 rounded-full hover:bg-accent p-1 pr-2 outline-none">
               <Avatar>

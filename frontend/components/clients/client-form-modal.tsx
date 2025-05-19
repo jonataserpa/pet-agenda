@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -44,6 +44,17 @@ export function ClientFormModal({ isOpen, onClose, onSave, client }: ClientFormM
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
 
+  useEffect(() => {
+    setFormData({
+      nome: client?.nome || "",
+      email: client?.email || "",
+      telefone: client?.telefone || "",
+      status: client?.status || "Ativo",
+      pets: client?.pets || [],
+      observacao: client?.observacao || "",
+    })
+  }, [client])
+
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -66,7 +77,10 @@ export function ClientFormModal({ isOpen, onClose, onSave, client }: ClientFormM
       [field]: true,
     }))
 
-    validateField(field, formData[field as keyof typeof formData])
+    const value = formData[field as keyof typeof formData]
+    if (typeof value === 'string') {
+      validateField(field, value)
+    }
   }
 
   const validateField = (field: string, value: string) => {

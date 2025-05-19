@@ -10,22 +10,11 @@ interface TokenPayload {
 }
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
+  // Lê o token do cookie
+  const token = req.cookies?.token;
 
-  if (!authHeader) {
+  if (!token) {
     return res.status(401).json({ error: 'Token não fornecido' });
-  }
-
-  const parts = authHeader.split(' ');
-
-  if (parts.length !== 2) {
-    return res.status(401).json({ error: 'Token com formato inválido' });
-  }
-
-  const [scheme, token] = parts;
-
-  if (!/^Bearer$/i.test(scheme)) {
-    return res.status(401).json({ error: 'Token com formato inválido' });
   }
 
   try {

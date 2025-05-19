@@ -10,29 +10,39 @@ import { ClientFormModal } from "@/components/clients/client-form-modal"
 import { Plus, Search, Filter, Pencil, Trash } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { clientService } from "@/lib/clientService"
+import { useRouter } from "next/navigation"
+import axios from 'axios'
 
 export default function ClientesPage() {
   const [clients, setClients] = useState<any[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedClient, setSelectedClient] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [pageLoading, setPageLoading] = useState(true)
   const { toast } = useToast()
+  const router = useRouter()
 
   useEffect(() => {
+    // O middleware já garantiu a autenticação. Agora só buscamos os dados.
     async function fetchClients() {
+      setPageLoading(true)
       try {
         const data = await clientService.list()
         setClients(data)
       } catch (error) {
-        toast({
-          title: "Erro ao carregar clientes",
-          description: "Não foi possível buscar os clientes do servidor.",
-          variant: "destructive",
-        })
+        // Tratar erro ao buscar clientes
+        console.error("Erro ao buscar clientes:", error)
+        toast({ title: "Erro ao carregar clientes", variant: "destructive" })
+      } finally {
+        setPageLoading(false)
       }
     }
     fetchClients()
   }, [toast])
+
+  if (pageLoading) {
+    return <div>Carregando dados dos clientes...</div>
+  }
 
   const handleOpenModal = () => {
     setSelectedClient(null)
@@ -70,14 +80,23 @@ export default function ClientesPage() {
     handleCloseModal()
   }
 
-  const handleDeleteClient = (clientId: string) => {
+  const handleDeleteClient = async (clientId: string) => {
     if (confirm("Tem certeza que deseja excluir este cliente?")) {
-      setClients((prevClients) => prevClients.filter((c) => c.id !== clientId))
-      toast({
-        title: "Cliente excluído",
-        description: "O cliente foi excluído com sucesso.",
-        variant: "destructive",
-      })
+      try {
+        await clientService.delete(clientId)
+        setClients((prevClients) => prevClients.filter((c) => c.id !== clientId))
+        toast({
+          title: "Cliente excluído",
+          description: "O cliente foi excluído com sucesso.",
+          variant: "destructive",
+        })
+      } catch (error) {
+        toast({
+          title: "Erro ao excluir cliente",
+          description: "Não foi possível excluir o cliente.",
+          variant: "destructive",
+        })
+      }
     }
   }
 
@@ -88,7 +107,6 @@ export default function ClientesPage() {
       client?.nome.toLowerCase().includes(searchLower) ||
       client?.email.toLowerCase().includes(searchLower) ||
       client?.telefone.includes(searchTerm)
-      // client?.petsame.toLowerCase().includes(searchLower)
     )
   })
 
@@ -108,9 +126,8 @@ export default function ClientesPage() {
         </div>
       ),
     },
-    { key: "petName", header: "Pet" },
     { key: "email", header: "Email" },
-    { key: "phone", header: "Telefone" },
+    { key: "telefone", header: "Telefone" },
     {
       key: "status",
       header: "Status",
@@ -147,7 +164,7 @@ export default function ClientesPage() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar clientes ou pets..."
+            placeholder="Buscar clientes..."
             className="w-full pl-10 pr-4 py-2 border rounded-md"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}

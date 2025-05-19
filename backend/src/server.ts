@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import routes from './routes';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger/swagger';
+import cookieParser from 'cookie-parser';
 
 // Carrega as variáveis de ambiente
 dotenv.config();
@@ -14,9 +15,13 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Configuração dos middlewares
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3001', // ajuste para a porta do frontend
+  credentials: true
+}));
 app.use(express.json());
 app.use(morgan('dev'));
+app.use(cookieParser());
 
 // Configura o Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

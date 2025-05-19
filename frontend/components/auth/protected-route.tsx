@@ -1,24 +1,32 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect } from "react"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
+
+// Lista de páginas que não precisam de autenticação
+const publicPages = ['/login', '/cadastro', '/']
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
   const router = useRouter()
-  const pathname = usePathname()
-
+  
+  // Este efeito é executado após a renderização, não durante
   useEffect(() => {
-    // Verificar se o usuário está autenticado
-    if (!isLoading && !user && pathname !== "/login") {
-      router.push("/login")
+    // Obtém o pathname da URL atual
+    const pathname = window.location.pathname
+    
+    // Verifica se a página atual não é pública e o usuário não está autenticado
+    const isPublicPage = publicPages.includes(pathname)
+    
+    if (!isLoading && !user && !isPublicPage) {
+      console.log(`ProtectedRoute: Redirecionando de ${pathname} para /login (não autenticado)`)
+      router.push('/login')
     }
-  }, [user, isLoading, router, pathname])
+  }, [user, isLoading, router])
 
-  // Mostrar nada enquanto verifica a autenticação
+  // Mostramos um indicador de carregamento enquanto verificamos a autenticação
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -27,22 +35,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
-  // Se estiver na página de login e já estiver autenticado, redirecionar para a home
-  if (!isLoading && user && pathname === "/login") {
-    router.push("/")
-    return null
-  }
-
-  // Se estiver na página de login e não estiver autenticado, mostrar a página de login
-  if (pathname === "/login") {
-    return <>{children}</>
-  }
-
-  // Se não estiver autenticado, não mostrar nada (será redirecionado no useEffect)
-  if (!user) {
-    return null
-  }
-
-  // Se estiver autenticado e não estiver na página de login, mostrar o conteúdo
+  // Renderizar o conteúdo normalmente - o redirecionamento acontece no useEffect
   return <>{children}</>
 }
