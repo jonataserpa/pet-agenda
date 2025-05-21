@@ -11,7 +11,26 @@ export class AgendamentoController {
 
   async findAll(req: Request, res: Response): Promise<Response> {
     try {
+      console.log('AgendamentoController: Buscando todos os agendamentos com seus serviços');
       const agendamentos = await this.service.findAll();
+      console.log(`AgendamentoController: Encontrados ${agendamentos.length} agendamentos`);
+      
+      // Log para depuração (exemplo do primeiro agendamento)
+      if (agendamentos.length > 0) {
+        console.log('AgendamentoController: Exemplo do primeiro agendamento:', {
+          id: agendamentos[0].id,
+          data: agendamentos[0].data,
+          petId: agendamentos[0].petId,
+          pet: agendamentos[0].pet ? { 
+            id: agendamentos[0].pet.id,
+            nome: agendamentos[0].pet.nome
+          } : null,
+          servicos: agendamentos[0].servicos ? 
+            agendamentos[0].servicos.map(s => ({ id: s.id, nome: s.nome, preco: s.preco })) : 
+            []
+        });
+      }
+      
       return res.json(agendamentos);
     } catch (error) {
       console.error('Erro ao buscar agendamentos:', error);
@@ -168,7 +187,7 @@ export class AgendamentoController {
       return res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
-
+  
   async addServico(req: Request, res: Response): Promise<Response> {
     try {
       const agendamentoId = parseInt(req.params.id);

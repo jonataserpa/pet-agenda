@@ -1,96 +1,165 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
-import { AppointmentFormModal } from "@/components/appointments/appointment-form-modal"
-import { useToast } from "@/components/ui/use-toast"
+import { DataTable } from "@/components/ui/data-table"
 import { StatusBadge } from "@/components/ui/status-badge"
-import { cn } from "@/lib/utils"
+import { Pagination } from "@/components/ui/pagination"
+import { AppointmentFormModal } from "@/components/appointments/appointment-form-modal"
+import { Plus, Search, Filter, Pencil, Trash, Calendar, Clock } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
+import { appointmentService } from "@/lib/appointmentService"
+import { petService } from "@/lib/petService"
+import { serviceService } from "@/lib/serviceService"
+import { format, parseISO } from "date-fns"
+import { ptBR } from "date-fns/locale"
 
-// Dados de exemplo
-const initialAppointments = [
-  {
-    id: "#123",
-    clientName: "João Silva",
-    date: "2025-01-03",
-    time: "09:00",
-    phone: "(11) 98765-4321",
-    email: "joao.silva@email.com",
-    service: "Manutenção Preventiva",
-    notes: "Cliente solicitou revisão completa",
-    status: "Confirmado",
-  },
-  {
-    id: "#124",
-    clientName: "Maria Santos",
-    date: "2025-01-05",
-    time: "14:30",
-    phone: "(11) 97654-3210",
-    email: "maria.santos@email.com",
-    service: "Instalação de Equipamento",
-    notes: "",
-    status: "Pendente",
-  },
-]
+// Tipos de dados
+type Pet = {
+  id: number
+  nome: string
+  especie: string
+  raca: string
+  idade: number
+  peso: number
+  clienteId: number
+}
 
-const calendarData = {
-  month: "Janeiro 2025",
-  days: [
-    { day: 31, isCurrentMonth: false },
-    { day: 1, isCurrentMonth: true },
-    { day: 2, isCurrentMonth: true },
-    { day: 3, isCurrentMonth: true },
-    { day: 4, isCurrentMonth: true },
-    { day: 5, isCurrentMonth: true },
-    { day: 6, isCurrentMonth: true },
-    { day: 7, isCurrentMonth: true },
-    { day: 8, isCurrentMonth: true },
-    { day: 9, isCurrentMonth: true },
-    { day: 10, isCurrentMonth: true },
-    { day: 11, isCurrentMonth: true },
-    { day: 12, isCurrentMonth: true },
-    { day: 13, isCurrentMonth: true },
-    { day: 14, isCurrentMonth: true },
-    { day: 15, isCurrentMonth: true },
-    { day: 16, isCurrentMonth: true },
-    { day: 17, isCurrentMonth: true },
-    { day: 18, isCurrentMonth: true },
-    { day: 19, isCurrentMonth: true },
-    { day: 20, isCurrentMonth: true },
-    { day: 21, isCurrentMonth: true },
-    { day: 22, isCurrentMonth: true },
-    { day: 23, isCurrentMonth: true },
-    { day: 24, isCurrentMonth: true },
-    { day: 25, isCurrentMonth: true },
-    { day: 26, isCurrentMonth: true },
-    { day: 27, isCurrentMonth: true },
-    { day: 28, isCurrentMonth: true },
-    { day: 29, isCurrentMonth: true },
-    { day: 30, isCurrentMonth: true },
-    { day: 31, isCurrentMonth: true },
-    { day: 1, isCurrentMonth: false },
-    { day: 2, isCurrentMonth: false },
-    { day: 3, isCurrentMonth: false },
-    { day: 4, isCurrentMonth: false },
-  ],
+type Service = {
+  id: number
+  nome: string
+  preco: number
+  descricao: string
+}
+
+// Tipo de dados de agendamento
+type Appointment = {
+  id: string | number
+  petId: number
+  servicoId?: number
+  date?: string
+  time?: string
+  notes?: string
+  status: string
+  
+  // Campos adicionais do backend
+  data?: string
+  observacao?: string
+  servicos?: Array<{
+    id: number
+    nome: string
+    preco: number
+    descricao: string
+  }>
+  
+  // Campos para exibição na tabela
+  petName?: string
+  clientName?: string
+  serviceName?: string
+  servicePrice?: number
+  phone?: string
+  email?: string
 }
 
 export default function AgendamentosPage() {
-  const [viewMode, setViewMode] = useState("Semana")
-  const [appointments, setAppointments] = useState(initialAppointments)
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [pets, setPets] = useState<Pet[]>([])
+  const [services, setServices] = useState<Service[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedAppointment, setSelectedAppointment] = useState<any>(null)
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [pageLoading, setPageLoading] = useState(true)
   const { toast } = useToast()
+
+  // Buscar dados do backend quando o componente montar
+  useEffect(() => {
+    async function fetchData() {
+      setPageLoading(true)
+      try {
+        // Buscar pets
+        console.log("AgendamentosPage: Buscando pets...")
+        const petsData = await petService.list()
+        setPets(petsData)
+        
+        // Buscar serviços
+        console.log("AgendamentosPage: Buscando serviços...")
+        const servicesData = await serviceService.list()
+        setServices(servicesData)
+        
+        // Buscar agendamentos
+        console.log("AgendamentosPage: Buscando agendamentos...")
+        const appointmentsData = await appointmentService.list()
+        
+        console.log("Pets recebidos:", petsData);
+        console.log("Serviços recebidos:", servicesData);
+        console.log("Agendamentos recebidos:", appointmentsData);
+        
+        // Processar agendamentos para exibição na tabela
+        const enrichedAppointments = appointmentsData.map((appointment: any) => {
+          // Agora utilizamos diretamente os dados recebidos da API
+          // O pet já vem completo do backend
+          const pet = appointment.pet;
+          
+          // Inicializamos os dados do primeiro serviço (se existir)
+          let serviceName = "Sem serviço";
+          let servicePrice = undefined;
+          let servicoId = undefined;
+          
+          // Se existem serviços, usamos o primeiro para exibição principal
+          if (appointment.servicos && appointment.servicos.length > 0) {
+            const primaryService = appointment.servicos[0];
+            serviceName = primaryService.nome;
+            servicePrice = primaryService.preco;
+            servicoId = primaryService.id;
+            
+            // Se há mais de um serviço, adicionamos indicação na descrição
+            if (appointment.servicos.length > 1) {
+              serviceName = `${serviceName} +${appointment.servicos.length - 1}`;
+            }
+            
+            console.log(`Serviços para agendamento ${appointment.id}:`, appointment.servicos);
+          }
+          
+          // Usar o campo 'data' como date para compatibilidade com o frontend
+          const date = appointment.data || appointment.date;
+          
+          return {
+            ...appointment,
+            date: date,
+            petName: pet?.nome || "Pet não encontrado",
+            clientName: pet ? `Dono do ${pet.nome}` : "Cliente desconhecido",
+            serviceName: serviceName,
+            servicePrice: servicePrice,
+            // Mantemos a lista completa de serviços também
+            servicos: appointment.servicos || []
+          };
+        });
+        
+        setAppointments(enrichedAppointments)
+        console.log("AgendamentosPage: Dados processados:", enrichedAppointments)
+      } catch (error) {
+        console.error("AgendamentosPage: Erro ao buscar dados:", error)
+        toast({ 
+          title: "Erro ao carregar dados", 
+          description: "Não foi possível obter os dados do servidor.",
+          variant: "destructive" 
+        })
+        setAppointments([])
+      } finally {
+        setPageLoading(false)
+      }
+    }
+    
+    fetchData()
+  }, [toast])
 
   const handleOpenModal = () => {
     setSelectedAppointment(null)
     setIsModalOpen(true)
   }
 
-  const handleEditAppointment = (appointment: any) => {
+  const handleEditAppointment = (appointment: Appointment) => {
     setSelectedAppointment(appointment)
     setIsModalOpen(true)
   }
@@ -100,174 +169,265 @@ export default function AgendamentosPage() {
     setSelectedAppointment(null)
   }
 
-  const handleSaveAppointment = (appointment: any) => {
-    if (selectedAppointment) {
-      // Editar agendamento existente
-      setAppointments((prev) => prev.map((a) => (a.id === appointment.id ? appointment : a)))
+  const handleSaveAppointment = async (appointment: any) => {
+    try {
+      console.log("AgendamentosPage: Salvando agendamento:", appointment)
+      const savedAppointment = await appointmentService.save(appointment)
+      
+      // Encontrar pet e serviço para enriquecer os dados salvos
+      const pet = pets.find(p => p.id === savedAppointment.petId)
+      const service = services.find(s => s.id === savedAppointment.servicoId)
+      
+      // Enriquecer o agendamento salvo com dados para exibição
+      const enrichedAppointment = {
+        ...savedAppointment,
+        petName: pet?.nome || "Pet não encontrado",
+        clientName: `Dono do ${pet?.nome || "Pet"}`,
+        serviceName: service?.nome || "Serviço não encontrado",
+        servicePrice: service?.preco,
+      }
+      
+      if (selectedAppointment) {
+        // Editar agendamento existente
+        setAppointments((prev) => prev.map((a) => 
+          a.id === enrichedAppointment.id ? enrichedAppointment : a
+        ))
+        toast({
+          title: "Agendamento atualizado",
+          description: `Agendamento de ${enrichedAppointment.petName} foi atualizado.`,
+        })
+      } else {
+        // Adicionar novo agendamento
+        setAppointments((prev) => [...prev, enrichedAppointment])
+        toast({
+          title: "Agendamento criado",
+          description: `Agendamento de ${enrichedAppointment.petName} foi criado com sucesso.`,
+        })
+      }
+      
+      handleCloseModal()
+    } catch (error) {
+      console.error("AgendamentosPage: Erro ao salvar agendamento:", error)
       toast({
-        title: "Agendamento atualizado",
-        description: `Agendamento para ${appointment.clientName} foi atualizado.`,
-      })
-    } else {
-      // Adicionar novo agendamento
-      setAppointments((prev) => [...prev, appointment])
-      toast({
-        title: "Agendamento criado",
-        description: `Agendamento para ${appointment.clientName} foi criado com sucesso.`,
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar o agendamento no servidor.",
+        variant: "destructive",
       })
     }
   }
 
-  // Função para obter os agendamentos de um dia específico
-  const getAppointmentsForDay = (day: number, isCurrentMonth: boolean) => {
-    if (!isCurrentMonth) return []
+  const handleDeleteAppointment = async (appointmentId: string | number) => {
+    if (confirm("Tem certeza que deseja excluir este agendamento?")) {
+      try {
+        console.log(`AgendamentosPage: Excluindo agendamento ${appointmentId}`)
+        await appointmentService.delete(String(appointmentId))
+        
+        // Atualizar estado local após exclusão bem-sucedida
+        setAppointments((prev) => prev.filter((a) => a.id !== appointmentId))
+        
+        toast({
+          title: "Agendamento excluído",
+          description: "O agendamento foi excluído com sucesso.",
+          variant: "destructive",
+        })
+      } catch (error) {
+        console.error(`AgendamentosPage: Erro ao excluir agendamento ${appointmentId}:`, error)
+        toast({
+          title: "Erro ao excluir agendamento",
+          description: "Não foi possível excluir o agendamento no servidor.",
+          variant: "destructive",
+        })
+      }
+    }
+  }
 
-    // Formatar a data para comparação (YYYY-MM-DD)
-    const year = 2025
-    const month = 1 // Janeiro
-    const formattedDate = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`
+  // Formatar data para exibição no padrão brasileiro
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "-"
+    
+    try {
+      // Verifica se a data contém o formato completo com hora
+      if (dateString.includes('T') || dateString.includes(' ')) {
+        // Se for o formato ISO '2025-05-08T11:14:47.838Z' ou '2025-05-08 11:14:47.838'
+        console.log(`Formatando data: ${dateString}`);
+        const date = new Date(dateString);
+        console.log(`Data convertida para objeto Date: ${date}`);
+        return format(date, "dd/MM/yyyy", { locale: ptBR });
+      } else {
+        // Se for apenas a data no formato 'YYYY-MM-DD'
+        return format(parseISO(dateString), "dd/MM/yyyy", { locale: ptBR });
+      }
+    } catch (error) {
+      console.error("Erro ao formatar data:", dateString, error);
+      return dateString;
+    }
+  }
 
-    return appointments.filter((appointment) => appointment.date === formattedDate)
+  // Extrair e formatar hora de um timestamp
+  const formatTime = (dateString: string | undefined) => {
+    if (!dateString) return "-"
+    
+    try {
+      // Se a string contém 'T' ou espaço, é um timestamp completo
+      if (dateString.includes('T') || dateString.includes(' ')) {
+        console.log(`Formatando hora: ${dateString}`);
+        const date = new Date(dateString);
+        console.log(`Hora convertida para objeto Date: ${date}`);
+        return format(date, "HH:mm", { locale: ptBR });
+      } else if (dateString.includes(':')) {
+        // Se já é apenas um horário
+        return dateString;
+      }
+      return "-";
+    } catch (error) {
+      console.error("Erro ao formatar hora:", dateString, error);
+      return "-";
+    }
+  }
+
+  // Formatar preço para exibição
+  const formatPrice = (price?: number) => {
+    if (price === undefined) return "-";
+    return `R$ ${price.toFixed(2)}`;
+  }
+
+  // Filtrar agendamentos com base no termo de pesquisa
+  const filteredAppointments = appointments.filter((appointment) => {
+    if (!searchTerm.trim()) return true
+    
+    const searchLower = searchTerm.toLowerCase()
+    return (
+      appointment.petName?.toLowerCase().includes(searchLower) ||
+      appointment.clientName?.toLowerCase().includes(searchLower) ||
+      appointment.serviceName?.toLowerCase().includes(searchLower) ||
+      appointment.status?.toLowerCase().includes(searchLower) ||
+      formatDate(appointment.date).includes(searchTerm)
+    )
+  })
+
+  const columns = [
+    {
+      key: "pet",
+      header: "Pet",
+      cell: (item: Appointment) => (
+        <div className="flex items-center gap-3">
+          <div className="font-medium">{item.petName || "-"}</div>
+        </div>
+      ),
+    },
+    {
+      key: "datetime",
+      header: "Data e Hora",
+      cell: (item: Appointment) => (
+        <div className="flex flex-col">
+          <div className="flex items-center gap-1">
+            <Calendar className="h-3 w-3 text-muted-foreground" />
+            <span>{formatDate(item.date)}</span>
+          </div>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <Clock className="h-3 w-3" />
+            <span>{item.time || (item.date?.includes('T') || item.date?.includes(' ') ? formatTime(item.date) : "-")}</span>
+          </div>
+        </div>
+      ),
+    },
+    { 
+      key: "service", 
+      header: "Serviço",
+      cell: (item: Appointment) => (
+        <div className="flex flex-col">
+          <span className="font-medium">{item.serviceName || "-"}</span>
+          <span className="text-xs text-muted-foreground">
+            {formatPrice(item.servicePrice)}
+            {item.servicos && item.servicos.length > 1 && (
+              <span className="ml-1 text-xs text-blue-500 cursor-help" title={item.servicos.map(s => `${s.nome} - ${formatPrice(s.preco)}`).join(', ')}>
+                (Múltiplos serviços)
+              </span>
+            )}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      cell: (item: Appointment) => <StatusBadge status={item.status || "Pendente"} />,
+    },
+    {
+      key: "actions",
+      header: "Ações",
+      cell: (item: Appointment) => (
+        <div className="flex gap-2">
+          <Button variant="ghost" size="icon" onClick={() => handleEditAppointment(item)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDeleteAppointment(item.id)}>
+            <Trash className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ]
+
+  if (pageLoading) {
+    return (
+      <MainLayout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          <span className="ml-3 text-lg">Carregando agendamentos...</span>
+        </div>
+      </MainLayout>
+    )
   }
 
   return (
     <MainLayout>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Agendamento de Serviços</h1>
+        <h1 className="text-2xl font-bold">Agendamentos</h1>
         <Button className="flex items-center gap-2" onClick={handleOpenModal}>
           <Plus className="h-4 w-4" />
           Novo Agendamento
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-card p-6 rounded-lg border shadow-sm">
-          <h2 className="text-lg font-semibold mb-4">Filtros</h2>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Tipo de Serviço</label>
-              <Select defaultValue="todos">
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="manutencao">Manutenção</SelectItem>
-                  <SelectItem value="instalacao">Instalação</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Técnico</label>
-              <Select defaultValue="todos">
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="joao">João</SelectItem>
-                  <SelectItem value="maria">Maria</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Status</label>
-              <Select defaultValue="todos">
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="pendente">Pendente</SelectItem>
-                  <SelectItem value="confirmado">Confirmado</SelectItem>
-                  <SelectItem value="concluido">Concluído</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar agendamentos..."
+            className="w-full pl-10 pr-4 py-2 border rounded-md"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
+        <Button variant="outline" className="flex items-center gap-2">
+          <Filter className="h-4 w-4" />
+          Filtros
+        </Button>
+      </div>
 
-        <div className="md:col-span-3 bg-card rounded-lg border shadow-sm">
-          <div className="p-4 border-b flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <span className="font-medium">{calendarData.month}</span>
-            </div>
+      <DataTable 
+        columns={columns} 
+        data={filteredAppointments} 
+        emptyMessage="Nenhum agendamento encontrado" 
+      />
 
-            <div className="flex items-center gap-2">
-              <Button variant={viewMode === "Dia" ? "default" : "outline"} onClick={() => setViewMode("Dia")}>
-                Dia
-              </Button>
-              <Button variant={viewMode === "Semana" ? "default" : "outline"} onClick={() => setViewMode("Semana")}>
-                Semana
-              </Button>
-              <Button variant={viewMode === "Mês" ? "default" : "outline"} onClick={() => setViewMode("Mês")}>
-                Mês
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-7 text-center border-b">
-            <div className="p-4 font-medium">Dom</div>
-            <div className="p-4 font-medium">Seg</div>
-            <div className="p-4 font-medium">Ter</div>
-            <div className="p-4 font-medium">Qua</div>
-            <div className="p-4 font-medium">Qui</div>
-            <div className="p-4 font-medium">Sex</div>
-            <div className="p-4 font-medium">Sáb</div>
-          </div>
-
-          <div className="grid grid-cols-7 text-center">
-            {calendarData.days.map((day, index) => {
-              const dayAppointments = getAppointmentsForDay(day.day, day.isCurrentMonth)
-
-              return (
-                <div key={index} className="border-r border-b min-h-24 p-2">
-                  <div
-                    className={cn("text-sm mb-1", !day.isCurrentMonth ? "text-muted-foreground" : "text-foreground")}
-                  >
-                    {day.day}
-                  </div>
-
-                  {dayAppointments.map((appointment) => (
-                    <div
-                      key={appointment.id}
-                      className={cn(
-                        "p-1 rounded text-xs mb-1 cursor-pointer",
-                        "bg-blue-100 text-blue-800 hover:bg-blue-200",
-                        "dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800",
-                      )}
-                      onClick={() => handleEditAppointment(appointment)}
-                    >
-                      <div className="font-medium truncate">
-                        {appointment.time} - {appointment.clientName}
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="truncate">{appointment.service}</span>
-                        <StatusBadge status={appointment.status} className="text-[10px] px-1.5 py-0" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )
-            })}
-          </div>
+      <div className="mt-4 flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Mostrando {filteredAppointments.length} de {appointments.length} agendamentos
         </div>
+        <Pagination currentPage={1} totalPages={1} />
       </div>
 
       <AppointmentFormModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSave={handleSaveAppointment}
-        appointment={selectedAppointment}
+        appointment={selectedAppointment ? {
+          ...selectedAppointment,
+          id: String(selectedAppointment.id)
+        } : undefined}
       />
     </MainLayout>
   )

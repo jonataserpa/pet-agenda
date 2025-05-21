@@ -9,7 +9,32 @@ export class AgendamentoRepository {
   }
 
   async findAll(): Promise<Agendamento[]> {
-    return this.prisma.agendamento.findMany();
+    // Buscar todos os agendamentos com seus pets
+    const agendamentos = await this.prisma.agendamento.findMany({
+      include: {
+        pet: true, // Incluir os dados do pet
+        agendamentoServicos: { // Incluir os serviços associados
+          include: {
+            servico: true
+          }
+        }
+      }
+    });
+
+    // Transformar os dados para o formato esperado pelo cliente
+    return agendamentos.map(agendamento => {
+      // Extrair os serviços do relacionamento
+      const servicos = agendamento.agendamentoServicos.map(as => as.servico);
+      
+      // Desestruturar para remover o campo original e criar uma nova estrutura
+      const { agendamentoServicos, ...agendamentoData } = agendamento;
+      
+      // Retornar o agendamento com os serviços em formato plano
+      return {
+        ...agendamentoData,
+        servicos
+      };
+    });
   }
 
   async findById(id: number): Promise<Agendamento | null> {

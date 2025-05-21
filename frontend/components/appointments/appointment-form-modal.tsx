@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { X, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -11,48 +11,168 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { appointmentService } from "@/lib/appointmentService"
+import { petService } from "@/lib/petService"
+import { serviceService } from "@/lib/serviceService"
+import { format } from "date-fns"
 
-// Lista de serviços disponíveis
-const availableServices = [
-  "Manutenção Preventiva",
-  "Instalação de Equipamento",
-  "Suporte Técnico",
-  "Consultoria",
-  "Treinamento",
-]
+// Tipos
+type Pet = {
+  id: number;
+  nome: string;
+  especie: string;
+  raca: string;
+  idade: number;
+  peso: number;
+  clienteId: number;
+};
+
+type Service = {
+  id: number;
+  nome: string;
+  preco: number;
+  descricao: string;
+};
+
+type Appointment = {
+  id?: string;
+  petId?: number;
+  servicoId?: number;
+  date?: string;
+  time?: string;
+  notes?: string;
+  status?: string;
+  // Adicionando campos que vêm do backend
+  data?: string;
+  observacao?: string;
+  servicos?: Array<Service>;
+  // Campos adicionais para exibição
+  petName?: string;
+  clientName?: string;
+  serviceName?: string;
+  servicePrice?: number;
+};
 
 interface AppointmentFormModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onSave: (appointment: any) => void
-  appointment?: {
-    id?: string
-    clientName: string
-    date: string
-    time: string
-    phone: string
-    email?: string
-    service: string
-    notes?: string
-    status?: string
-  }
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (appointment: Appointment) => void;
+  appointment?: Appointment;
 }
 
 export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: AppointmentFormModalProps) {
   const isEditing = !!appointment?.id
 
+  // Função para extrair a data do formato do backend
+  const extractDate = (dateString?: string) => {
+    if (!dateString) return ""
+    
+    try {
+      // Se a string contém espaço, é um timestamp completo
+      if (dateString.includes(' ')) {
+        const date = new Date(dateString)
+        return format(date, "yyyy-MM-dd")
+      }
+      // Se já é uma data no formato YYYY-MM-DD
+      return dateString
+    } catch (error) {
+      console.error("Erro ao extrair data:", error)
+      return ""
+    }
+  }
+
+  // Função para extrair a hora do formato do backend
+  const extractTime = (dateString?: string, timeString?: string) => {
+    if (dateString && dateString.includes(' ')) {
+      try {
+        const date = new Date(dateString)
+        return format(date, "HH:mm")
+      } catch (error) {
+        console.error("Erro ao extrair hora:", error)
+        return timeString || ""
+      }
+    }
+    return timeString || ""
+  }
+
   const [formData, setFormData] = useState({
-    clientName: appointment?.clientName || "",
-    date: appointment?.date || "",
-    time: appointment?.time || "",
-    phone: appointment?.phone || "",
-    email: appointment?.email || "",
-    service: appointment?.service || "",
+    petId: appointment?.petId ? String(appointment.petId) : "",
+    servicoId: appointment?.servicoId ? String(appointment.servicoId) : "",
+    date: extractDate(appointment?.date),
+    time: extractTime(appointment?.date, appointment?.time),
     notes: appointment?.notes || "",
   })
 
+  const [pets, setPets] = useState<Pet[]>([])
+  const [services, setServices] = useState<Service[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Buscar pets e serviços quando a modal abrir
+  useEffect(() => {
+    async function fetchData() {
+      if (!isOpen) return;
+      
+      setIsLoading(true);
+      try {
+        // Buscar lista de pets
+        const petsData = await petService.list();
+        setPets(petsData);
+        
+        // Buscar lista de serviços
+        const servicesData = await serviceService.list();
+        setServices(servicesData);
+      } catch (error) {
+        console.error("Erro ao buscar dados para o formulário:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, [isOpen]);
+
+  // Configuração inicial do formulário
+  useEffect(() => {
+    // Se estivermos editando, inicializamos com os dados do agendamento
+    if (isEditing && appointment) {
+      // Determinar o ID do serviço a ser selecionado:
+      // 1. Se há serviços associados, use o primeiro
+      // 2. Senão, se há um servicoId, use esse
+      // 3. Senão, deixe vazio
+      let selectedServiceId = "";
+      
+      if (appointment.servicos && appointment.servicos.length > 0) {
+        // Temos uma lista de serviços associados
+        selectedServiceId = String(appointment.servicos[0].id);
+        console.log(`FormModal: Usando primeiro serviço da lista: ${selectedServiceId}`);
+      } else if (appointment.servicoId) {
+        // Temos um ID de serviço diretamente
+        selectedServiceId = String(appointment.servicoId);
+        console.log(`FormModal: Usando servicoId direto: ${selectedServiceId}`);
+      }
+      
+      // Extrair data e hora do agendamento
+      const extractedDate = extractDate(appointment.data || appointment.date);
+      const extractedTime = extractTime(appointment.data || appointment.date, appointment.time);
+      
+      setFormData({
+        petId: String(appointment.petId || ""),
+        servicoId: selectedServiceId,
+        date: extractedDate,
+        time: extractedTime,
+        notes: appointment.notes || appointment.observacao || "",
+      });
+      
+      console.log("FormModal: Dados inicializados para edição:", {
+        petId: String(appointment.petId || ""),
+        servicoId: selectedServiceId,
+        date: extractedDate,
+        time: extractedTime,
+        hasServicos: appointment.servicos ? appointment.servicos.length : 0
+      });
+    }
+  }, [isEditing, appointment]);
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({
@@ -83,29 +203,17 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
     let error = ""
 
     switch (field) {
-      case "clientName":
-        if (!value.trim()) error = "Nome do cliente é obrigatório"
+      case "petId":
+        if (!value) error = "Pet é obrigatório"
+        break
+      case "servicoId":
+        if (!value) error = "Serviço é obrigatório"
         break
       case "date":
         if (!value) error = "Data é obrigatória"
         break
       case "time":
         if (!value) error = "Horário é obrigatório"
-        break
-      case "phone":
-        if (!value.trim()) {
-          error = "Telefone é obrigatório"
-        } else if (!/^$$\d{2}$$\s\d{5}-\d{4}$/.test(value)) {
-          error = "Formato inválido. Use (00) 00000-0000"
-        }
-        break
-      case "email":
-        if (value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          error = "Email inválido"
-        }
-        break
-      case "service":
-        if (!value) error = "Serviço é obrigatório"
         break
       default:
         break
@@ -123,7 +231,7 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
   }
 
   const validateForm = () => {
-    const requiredFields = ["clientName", "date", "time", "phone", "service"]
+    const requiredFields = ["petId", "servicoId", "date", "time"]
     let isValid = true
 
     // Marcar todos os campos obrigatórios como tocados
@@ -144,11 +252,6 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
       }
     })
 
-    // Validar email se estiver preenchido
-    if (formData.email && !validateField("email", formData.email)) {
-      isValid = false
-    }
-
     return isValid
   }
 
@@ -157,39 +260,102 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
 
     if (!validateForm()) return
 
+    // Encontrar o pet e serviço selecionados para detalhes adicionais
+    const selectedPet = pets.find(pet => String(pet.id) === formData.petId);
+    const selectedService = services.find(service => String(service.id) === formData.servicoId);
+
+    // Preparar a data no formato esperado pelo backend - ISO 8601
+    let dateTimeValue;
+    
+    // Verificar se precisamos criar um timestamp completo
+    if (formData.date && formData.time) {
+      // Formatar a data e hora para o backend
+      const dateStr = formData.date; // YYYY-MM-DD
+      const timeStr = formData.time; // HH:MM
+      dateTimeValue = `${dateStr}T${timeStr}:00.000Z`;
+      
+      console.log("Data formatada para envio:", dateTimeValue);
+    }
+
+    // Construir o objeto de agendamento
     const newAppointment = {
-      ...formData,
-      id: appointment?.id || undefined,
-      status: appointment?.status || "Pendente",
+      id: appointment?.id,
+      petId: Number(formData.petId),
+      data: dateTimeValue, // Usando 'data' como esperado pelo backend
+      notes: formData.notes,
+      observacao: formData.notes, // Mapeando notes para observacao caso o backend use esse campo
+      status: appointment?.status || "AGENDADO", // Certificando-se de usar um status válido
+      
+      // Preservar os serviços existentes se estivermos editando
+      servicos: appointment?.servicos || [],
+      
+      // Adicionar dados para exibição na tabela (não enviados ao backend)
+      petName: selectedPet?.nome,
+      clientName: selectedPet ? `Dono do ${selectedPet.nome}` : "",
+      serviceName: selectedService?.nome,
+      servicePrice: selectedService?.preco,
     }
 
     try {
-      const savedAppointment = await appointmentService.save(newAppointment)
+      console.log("Enviando agendamento para o backend:", newAppointment);
+      const savedAppointment = await appointmentService.save(newAppointment);
+      
+      // Se salvou com sucesso e temos um serviço selecionado, adicionar o serviço ao agendamento
+      if (savedAppointment && savedAppointment.id && selectedService) {
+        try {
+          // Se estamos editando e já temos serviços, verificamos se precisamos adicionar
+          let needToAddService = true;
+          
+          if (isEditing && appointment?.servicos && appointment.servicos.length > 0) {
+            // Verificar se o serviço que estamos tentando adicionar já existe
+            const existingService = appointment.servicos.find(s => s.id === Number(formData.servicoId));
+            if (existingService) {
+              console.log(`Serviço ${selectedService.id} já existe no agendamento, não será adicionado novamente`);
+              needToAddService = false;
+            }
+          }
+          
+          if (needToAddService) {
+            console.log(`Adicionando serviço ${selectedService.id} ao agendamento ${savedAppointment.id}`);
+            await appointmentService.addServico(savedAppointment.id, Number(formData.servicoId));
+          }
+        } catch (servicoError) {
+          console.error("Erro ao adicionar serviço ao agendamento:", servicoError);
+          // Mesmo com erro no serviço, continuamos o fluxo pois o agendamento foi criado
+        }
+      }
+      
       onSave(savedAppointment)
       onClose()
     } catch (error) {
-      // TODO: adicionar tratamento de erro
-      console.error(error)
+      console.error("Erro ao salvar agendamento:", error)
     }
   }
 
-  const formatPhoneNumber = (value: string) => {
-    // Remove todos os caracteres não numéricos
-    const numbers = value.replace(/\D/g, "")
-
-    // Aplica a formatação
-    if (numbers.length <= 2) {
-      return `(${numbers}`
-    } else if (numbers.length <= 7) {
-      return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`
-    } else {
-      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`
-    }
+  // Formatador para exibir nome e detalhes do pet
+  const formatPetOption = (pet: Pet) => {
+    return `${pet.nome} (${pet.especie} - ${pet.raca})`;
   }
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedValue = formatPhoneNumber(e.target.value)
-    handleChange("phone", formattedValue)
+  // Formatador para exibir nome e preço do serviço
+  const formatServiceOption = (service: Service) => {
+    return `${service.nome} - R$ ${service.preco.toFixed(2)}`;
+  }
+
+  if (isLoading) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Carregando</DialogTitle>
+          </DialogHeader>
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+            <span className="ml-3">Carregando...</span>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   return (
@@ -198,26 +364,62 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar Agendamento" : "Novo Agendamento"}</DialogTitle>
           <Button variant="ghost" size="icon" className="absolute right-4 top-4" onClick={onClose}>
+            <X className="h-4 w-4" />
           </Button>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="clientName" className={errors.clientName && touched.clientName ? "text-red-500" : ""}>
-                Nome do Cliente*
+              <Label htmlFor="petId" className={errors.petId && touched.petId ? "text-red-500" : ""}>
+                Pet*
               </Label>
-              <Input
-                id="clientName"
-                value={formData.clientName}
-                onChange={(e) => handleChange("clientName", e.target.value)}
-                onBlur={() => handleBlur("clientName")}
-                placeholder="Digite o nome completo"
-                className={cn(
-                  errors.clientName && touched.clientName ? "border-red-500 focus-visible:ring-red-500" : "",
-                )}
-              />
-              {errors.clientName && touched.clientName && <p className="text-xs text-red-500">{errors.clientName}</p>}
+              <Select
+                value={formData.petId}
+                onValueChange={(value) => handleChange("petId", value)}
+                onOpenChange={() => handleBlur("petId")}
+              >
+                <SelectTrigger
+                  id="petId"
+                  className={cn(errors.petId && touched.petId ? "border-red-500 focus-visible:ring-red-500" : "")}
+                >
+                  <SelectValue placeholder="Selecione um pet" />
+                </SelectTrigger>
+                <SelectContent>
+                  {pets.map((pet) => (
+                    <SelectItem key={pet.id} value={String(pet.id)}>
+                      {formatPetOption(pet)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.petId && touched.petId && <p className="text-xs text-red-500">{errors.petId}</p>}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="servicoId" className={errors.servicoId && touched.servicoId ? "text-red-500" : ""}>
+                Serviço*
+              </Label>
+              <Select
+                value={formData.servicoId}
+                onValueChange={(value) => handleChange("servicoId", value)}
+                onOpenChange={() => handleBlur("servicoId")}
+              >
+                <SelectTrigger
+                  id="servicoId"
+                  className={cn(errors.servicoId && touched.servicoId ? "border-red-500 focus-visible:ring-red-500" : "")}
+                >
+                  <SelectValue placeholder="Selecione um serviço" />
+                </SelectTrigger>
+                <SelectContent>
+                  {services.map((service) => (
+                    <SelectItem key={service.id} value={String(service.id)}>
+                      {formatServiceOption(service)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.servicoId && touched.servicoId && <p className="text-xs text-red-500">{errors.servicoId}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -263,69 +465,12 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="phone" className={errors.phone && touched.phone ? "text-red-500" : ""}>
-                Telefone*
-              </Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={handlePhoneChange}
-                onBlur={() => handleBlur("phone")}
-                placeholder="(00) 00000-0000"
-                className={cn(errors.phone && touched.phone ? "border-red-500 focus-visible:ring-red-500" : "")}
-              />
-              {errors.phone && touched.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="email" className={errors.email && touched.email ? "text-red-500" : ""}>
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-                onBlur={() => handleBlur("email")}
-                placeholder="email@exemplo.com"
-                className={cn(errors.email && touched.email ? "border-red-500 focus-visible:ring-red-500" : "")}
-              />
-              {errors.email && touched.email && <p className="text-xs text-red-500">{errors.email}</p>}
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="service" className={errors.service && touched.service ? "text-red-500" : ""}>
-                Serviço*
-              </Label>
-              <Select
-                value={formData.service}
-                onValueChange={(value) => handleChange("service", value)}
-                onOpenChange={() => handleBlur("service")}
-              >
-                <SelectTrigger
-                  id="service"
-                  className={cn(errors.service && touched.service ? "border-red-500 focus-visible:ring-red-500" : "")}
-                >
-                  <SelectValue placeholder="Selecione um serviço" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableServices.map((service) => (
-                    <SelectItem key={service} value={service}>
-                      {service}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.service && touched.service && <p className="text-xs text-red-500">{errors.service}</p>}
-            </div>
-
-            <div className="grid gap-2">
               <Label htmlFor="notes">Observações</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => handleChange("notes", e.target.value)}
-                placeholder="Digite alguma observação importante"
+                placeholder="Informações adicionais sobre o agendamento"
                 className="min-h-[80px]"
               />
             </div>
@@ -336,7 +481,7 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
               Cancelar
             </Button>
             <Button type="submit" className="bg-gray-900 text-white hover:bg-gray-800">
-              Agendar
+              {isEditing ? "Salvar" : "Agendar"}
             </Button>
           </DialogFooter>
         </form>

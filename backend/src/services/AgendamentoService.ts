@@ -15,7 +15,10 @@ export class AgendamentoService {
   }
 
   async findAll(): Promise<Agendamento[]> {
-    return this.repository.findAll();
+    // Buscar todos os agendamentos com detalhes de pets e serviços
+    const agendamentos = await this.repository.findAll();
+    console.log(`AgendamentoService: Retornando ${agendamentos.length} agendamentos com detalhes de pets e serviços`);
+    return agendamentos;
   }
 
   async findById(id: number): Promise<Agendamento | null> {
