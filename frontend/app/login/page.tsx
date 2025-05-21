@@ -16,10 +16,10 @@ import axios from "axios"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [senha, setSenha] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+  const [errors, setErrors] = useState<{ email?: string; senha?: string }>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const router = useRouter()
@@ -27,14 +27,14 @@ export default function LoginPage() {
   const { toast } = useToast()
 
   const validateForm = () => {
-    const newErrors: { email?: string; password?: string } = {}
+    const newErrors: { email?: string; senha?: string } = {}
 
     if (!email) {
       newErrors.email = "Email é obrigatório"
     }
 
-    if (!password) {
-      newErrors.password = "Senha é obrigatória"
+    if (!senha) {
+      newErrors.senha = "Senha é obrigatória"
     }
 
     setErrors(newErrors)
@@ -51,7 +51,7 @@ export default function LoginPage() {
       console.log("LoginPage: Tentando fazer login para:", email);
       
       // Usar o método login do contexto de autenticação
-      const success = await login(email, password);
+      const success = await login(email, senha);
       
       if (success) {
         console.log(`LoginPage: Login bem-sucedido para ${email}. Redirecionando...`);
@@ -61,7 +61,7 @@ export default function LoginPage() {
         window.location.href = '/';
       } else {
         console.error("LoginPage: Login falhou");
-        setErrors({ email: 'Email ou senha inválidos', password: 'Email ou senha inválidos' });
+        setErrors({ email: 'Email ou senha inválidos', senha: 'Email ou senha inválidos' });
       }
     } catch (error) {
       console.error("LoginPage: Erro no login:", error);
@@ -70,7 +70,7 @@ export default function LoginPage() {
         console.error("LoginPage: Detalhes do erro:", error.response?.data || error.message);
       }
       
-      setErrors({ email: 'Email ou senha inválidos', password: 'Email ou senha inválidos' });
+      setErrors({ email: 'Email ou senha inválidos', senha: 'Email ou senha inválidos' });
     } finally {
       setIsSubmitting(false);
       console.log("LoginPage: handleSubmit finalizado.");
@@ -121,9 +121,9 @@ export default function LoginPage() {
                 id="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
-                className={`pl-10 ${errors.password ? "border-red-500" : ""}`}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                className={`pl-10 ${errors.senha ? "border-red-500" : ""}`}
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
               />
               <button
                 type="button"
@@ -137,7 +137,7 @@ export default function LoginPage() {
                 )}
               </button>
             </div>
-            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+            {errors.senha && <p className="text-red-500 text-xs mt-1">{errors.senha}</p>}
           </div>
 
           <div className="flex items-center justify-between">

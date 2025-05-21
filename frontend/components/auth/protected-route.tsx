@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 
 // Lista de páginas que não precisam de autenticação
-const publicPages = ['/login', '/cadastro', '/']
+const publicPages = ['/login']
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth()
+  const { usuario, isLoading } = useAuth()
   const router = useRouter()
   
   // Este efeito é executado após a renderização, não durante
@@ -20,11 +20,11 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     // Verifica se a página atual não é pública e o usuário não está autenticado
     const isPublicPage = publicPages.includes(pathname)
     
-    if (!isLoading && !user && !isPublicPage) {
+    if (!isLoading && !usuario && !isPublicPage) {
       console.log(`ProtectedRoute: Redirecionando de ${pathname} para /login (não autenticado)`)
       router.push('/login')
     }
-  }, [user, isLoading, router])
+  }, [usuario, isLoading, router])
 
   // Mostramos um indicador de carregamento enquanto verificamos a autenticação
   if (isLoading) {
