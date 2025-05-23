@@ -20,7 +20,7 @@ model Cliente {
   senha    String
   pets     Pet[]
   status   StatusCliente? @default(ATIVO)
-  observacao String?
+  observacao String
 
   @@map("clientes")
 }
@@ -53,6 +53,7 @@ model Agendamento {
   id                 Int                  @id @default(autoincrement())
   data               DateTime
   status             String
+  observacao         String 
   petId              Int
   pet                Pet                  @relation(fields: [petId], references: [id])
   agendamentoServicos AgendamentoServico[]

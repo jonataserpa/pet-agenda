@@ -51,14 +51,20 @@ export class AgendamentoRepository {
 
   async create(agendamento: Agendamento): Promise<Agendamento> {
     const { pet, servicos, ...agendamentoData } = agendamento;
-    
+
     return this.prisma.agendamento.create({
-      data: agendamentoData,
+      data: {   
+        ...agendamentoData,
+        observacao: agendamentoData.observacao || ''
+       }
     });
   }
 
   async update(id: number, agendamento: Agendamento): Promise<Agendamento> {
-    const { pet, servicos, ...agendamentoData } = agendamento;
+    const { pet, servicos, id: agendamentoId, ...agendamentoData } = agendamento;
+    
+    // Garantir que observacao seja uma string
+    agendamentoData.observacao = agendamentoData.observacao || '';
     
     return this.prisma.agendamento.update({
       where: { id },

@@ -38,18 +38,22 @@ export class ClienteRepository {
   }
 
   async create(cliente: Cliente): Promise<Cliente> {
-    const { pets, ...clienteData } = cliente;
+    const { pets, id, ...clienteData } = cliente;
 
     if (!clienteData.senha) {
       clienteData.senha = 'senha123';
     }
+
+    // Garantir que 'observacao' seja uma string
+    clienteData.observacao = clienteData.observacao || '';
 
     const hashedSenha = await bcrypt.hash(clienteData.senha, 10);
     
     const novoCliente = await this.prisma.cliente.create({
       data: {
         ...clienteData,
-        senha: hashedSenha
+        senha: hashedSenha,
+        observacao: clienteData.observacao || ''
       },
     });
     return mapPrismaClienteToModel(novoCliente);

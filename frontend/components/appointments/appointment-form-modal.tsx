@@ -39,7 +39,6 @@ type Appointment = {
   servicoId?: number;
   date?: string;
   time?: string;
-  notes?: string;
   status?: string;
   // Adicionando campos que vêm do backend
   data?: string;
@@ -65,7 +64,7 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
   // Função para extrair a data do formato do backend
   const extractDate = (dateString?: string) => {
     if (!dateString) return ""
-    
+
     try {
       // Se a string contém espaço, é um timestamp completo
       if (dateString.includes(' ')) {
@@ -99,7 +98,7 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
     servicoId: appointment?.servicoId ? String(appointment.servicoId) : "",
     date: extractDate(appointment?.date),
     time: extractTime(appointment?.date, appointment?.time),
-    notes: appointment?.notes || "",
+    observacao: appointment?.observacao || "",
   })
 
   const [pets, setPets] = useState<Pet[]>([])
@@ -112,13 +111,13 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
   useEffect(() => {
     async function fetchData() {
       if (!isOpen) return;
-      
+
       setIsLoading(true);
       try {
         // Buscar lista de pets
         const petsData = await petService.list();
         setPets(petsData);
-        
+
         // Buscar lista de serviços
         const servicesData = await serviceService.list();
         setServices(servicesData);
@@ -128,7 +127,7 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
         setIsLoading(false);
       }
     }
-    
+
     fetchData();
   }, [isOpen]);
 
@@ -141,7 +140,7 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
       // 2. Senão, se há um servicoId, use esse
       // 3. Senão, deixe vazio
       let selectedServiceId = "";
-      
+
       if (appointment.servicos && appointment.servicos.length > 0) {
         // Temos uma lista de serviços associados
         selectedServiceId = String(appointment.servicos[0].id);
@@ -151,19 +150,19 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
         selectedServiceId = String(appointment.servicoId);
         console.log(`FormModal: Usando servicoId direto: ${selectedServiceId}`);
       }
-      
+
       // Extrair data e hora do agendamento
       const extractedDate = extractDate(appointment.data || appointment.date);
       const extractedTime = extractTime(appointment.data || appointment.date, appointment.time);
-      
+
       setFormData({
         petId: String(appointment.petId || ""),
         servicoId: selectedServiceId,
         date: extractedDate,
         time: extractedTime,
-        notes: appointment.notes || appointment.observacao || "",
+        observacao: appointment.observacao || appointment.observacao || "",
       });
-      
+
       console.log("FormModal: Dados inicializados para edição:", {
         petId: String(appointment.petId || ""),
         servicoId: selectedServiceId,
@@ -266,14 +265,14 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
 
     // Preparar a data no formato esperado pelo backend - ISO 8601
     let dateTimeValue;
-    
+
     // Verificar se precisamos criar um timestamp completo
     if (formData.date && formData.time) {
       // Formatar a data e hora para o backend
       const dateStr = formData.date; // YYYY-MM-DD
       const timeStr = formData.time; // HH:MM
       dateTimeValue = `${dateStr}T${timeStr}:00.000Z`;
-      
+
       console.log("Data formatada para envio:", dateTimeValue);
     }
 
@@ -282,13 +281,12 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
       id: appointment?.id,
       petId: Number(formData.petId),
       data: dateTimeValue, // Usando 'data' como esperado pelo backend
-      notes: formData.notes,
-      observacao: formData.notes, // Mapeando notes para observacao caso o backend use esse campo
+      observacao: formData.observacao, // Mapeando notes para observacao caso o backend use esse campo
       status: appointment?.status || "AGENDADO", // Certificando-se de usar um status válido
-      
+
       // Preservar os serviços existentes se estivermos editando
       servicos: appointment?.servicos || [],
-      
+
       // Adicionar dados para exibição na tabela (não enviados ao backend)
       petName: selectedPet?.nome,
       clientName: selectedPet ? `Dono do ${selectedPet.nome}` : "",
@@ -299,13 +297,13 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
     try {
       console.log("Enviando agendamento para o backend:", newAppointment);
       const savedAppointment = await appointmentService.save(newAppointment);
-      
+
       // Se salvou com sucesso e temos um serviço selecionado, adicionar o serviço ao agendamento
       if (savedAppointment && savedAppointment.id && selectedService) {
         try {
           // Se estamos editando e já temos serviços, verificamos se precisamos adicionar
           let needToAddService = true;
-          
+
           if (isEditing && appointment?.servicos && appointment.servicos.length > 0) {
             // Verificar se o serviço que estamos tentando adicionar já existe
             const existingService = appointment.servicos.find(s => s.id === Number(formData.servicoId));
@@ -314,7 +312,7 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
               needToAddService = false;
             }
           }
-          
+
           if (needToAddService) {
             console.log(`Adicionando serviço ${selectedService.id} ao agendamento ${savedAppointment.id}`);
             await appointmentService.addServico(savedAppointment.id, Number(formData.servicoId));
@@ -324,7 +322,7 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
           // Mesmo com erro no serviço, continuamos o fluxo pois o agendamento foi criado
         }
       }
-      
+
       onSave(savedAppointment)
       onClose()
     } catch (error) {
@@ -465,11 +463,11 @@ export function AppointmentFormModal({ isOpen, onClose, onSave, appointment }: A
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="notes">Observações</Label>
+              <Label htmlFor="observacao">Observações</Label>
               <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => handleChange("notes", e.target.value)}
+                id="observacao"
+                value={formData.observacao}
+                onChange={(e) => handleChange("observacao", e.target.value)}
                 placeholder="Informações adicionais sobre o agendamento"
                 className="min-h-[80px]"
               />

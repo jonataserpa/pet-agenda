@@ -14,23 +14,24 @@ export class AgendamentoController {
       console.log('AgendamentoController: Buscando todos os agendamentos com seus serviços');
       const agendamentos = await this.service.findAll();
       console.log(`AgendamentoController: Encontrados ${agendamentos.length} agendamentos`);
-      
+
       // Log para depuração (exemplo do primeiro agendamento)
       if (agendamentos.length > 0) {
         console.log('AgendamentoController: Exemplo do primeiro agendamento:', {
           id: agendamentos[0].id,
           data: agendamentos[0].data,
           petId: agendamentos[0].petId,
-          pet: agendamentos[0].pet ? { 
+          observacao: agendamentos[0].observacao,
+          pet: agendamentos[0].pet ? {
             id: agendamentos[0].pet.id,
             nome: agendamentos[0].pet.nome
           } : null,
-          servicos: agendamentos[0].servicos ? 
-            agendamentos[0].servicos.map(s => ({ id: s.id, nome: s.nome, preco: s.preco })) : 
+          servicos: agendamentos[0].servicos ?
+            agendamentos[0].servicos.map(s => ({ id: s.id, nome: s.nome, preco: s.preco })) :
             []
         });
       }
-      
+
       return res.json(agendamentos);
     } catch (error) {
       console.error('Erro ao buscar agendamentos:', error);
@@ -41,13 +42,13 @@ export class AgendamentoController {
   async findById(req: Request, res: Response): Promise<Response> {
     try {
       const id = parseInt(req.params.id);
-      
+
       if (isNaN(id)) {
         return res.status(400).json({ error: 'ID inválido' });
       }
 
       const agendamento = await this.service.findById(id);
-      
+
       if (!agendamento) {
         return res.status(404).json({ error: 'Agendamento não encontrado' });
       }
@@ -62,7 +63,7 @@ export class AgendamentoController {
   async findByPetId(req: Request, res: Response): Promise<Response> {
     try {
       const petId = parseInt(req.params.petId);
-      
+
       if (isNaN(petId)) {
         return res.status(400).json({ error: 'ID do pet inválido' });
       }
@@ -90,9 +91,9 @@ export class AgendamentoController {
       return res.status(201).json(novoAgendamento);
     } catch (error: any) {
       if (error.message.includes('Pet não encontrado') ||
-          error.message.includes('campos obrigatórios') ||
-          error.message.includes('Status inválido') ||
-          error.message.includes('Já existe um agendamento')) {
+        error.message.includes('campos obrigatórios') ||
+        error.message.includes('Status inválido') ||
+        error.message.includes('Já existe um agendamento')) {
         return res.status(400).json({ error: error.message });
       }
       console.error('Erro ao criar agendamento:', error);
@@ -103,7 +104,7 @@ export class AgendamentoController {
   async update(req: Request, res: Response): Promise<Response> {
     try {
       const id = parseInt(req.params.id);
-      
+
       if (isNaN(id)) {
         return res.status(400).json({ error: 'ID inválido' });
       }
@@ -121,9 +122,9 @@ export class AgendamentoController {
         return res.status(404).json({ error: error.message });
       }
       if (error.message.includes('Pet não encontrado') ||
-          error.message.includes('campos obrigatórios') ||
-          error.message.includes('Status inválido') ||
-          error.message.includes('Já existe um agendamento')) {
+        error.message.includes('campos obrigatórios') ||
+        error.message.includes('Status inválido') ||
+        error.message.includes('Já existe um agendamento')) {
         return res.status(400).json({ error: error.message });
       }
       console.error('Erro ao atualizar agendamento:', error);
@@ -134,7 +135,7 @@ export class AgendamentoController {
   async delete(req: Request, res: Response): Promise<Response> {
     try {
       const id = parseInt(req.params.id);
-      
+
       if (isNaN(id)) {
         return res.status(400).json({ error: 'ID inválido' });
       }
@@ -153,7 +154,7 @@ export class AgendamentoController {
   async findWithPet(req: Request, res: Response): Promise<Response> {
     try {
       const id = parseInt(req.params.id);
-      
+
       if (isNaN(id)) {
         return res.status(400).json({ error: 'ID inválido' });
       }
@@ -172,7 +173,7 @@ export class AgendamentoController {
   async findWithServicos(req: Request, res: Response): Promise<Response> {
     try {
       const id = parseInt(req.params.id);
-      
+
       if (isNaN(id)) {
         return res.status(400).json({ error: 'ID inválido' });
       }
@@ -187,12 +188,12 @@ export class AgendamentoController {
       return res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
-  
+
   async addServico(req: Request, res: Response): Promise<Response> {
     try {
       const agendamentoId = parseInt(req.params.id);
       const { servicoId } = req.body;
-      
+
       if (isNaN(agendamentoId) || isNaN(servicoId)) {
         return res.status(400).json({ error: 'IDs inválidos' });
       }
@@ -201,7 +202,7 @@ export class AgendamentoController {
       return res.status(204).send();
     } catch (error: any) {
       if (error.message.includes('Agendamento não encontrado') ||
-          error.message.includes('Serviço não encontrado')) {
+        error.message.includes('Serviço não encontrado')) {
         return res.status(404).json({ error: error.message });
       }
       console.error('Erro ao adicionar serviço ao agendamento:', error);
@@ -213,7 +214,7 @@ export class AgendamentoController {
     try {
       const agendamentoId = parseInt(req.params.id);
       const servicoId = parseInt(req.params.servicoId);
-      
+
       if (isNaN(agendamentoId) || isNaN(servicoId)) {
         return res.status(400).json({ error: 'IDs inválidos' });
       }
@@ -222,7 +223,7 @@ export class AgendamentoController {
       return res.status(204).send();
     } catch (error: any) {
       if (error.message.includes('Agendamento não encontrado') ||
-          error.message.includes('Serviço não encontrado')) {
+        error.message.includes('Serviço não encontrado')) {
         return res.status(404).json({ error: error.message });
       }
       console.error('Erro ao remover serviço do agendamento:', error);

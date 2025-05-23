@@ -8,6 +8,7 @@ export interface Agendamento {
   petId: number;
   pet?: Pet;
   servicos?: Servico[];
+  observacao?: string;
 }
 
 export interface AgendamentoComPet extends Agendamento {
