@@ -117,10 +117,10 @@ export default function ClientesPage() {
       cell: (item: any) => (
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-full bg-gray-200 overflow-hidden">
-            <img src={item.avatar || "/placeholder.svg"} alt={item.name} />
+            <img src={`https://avatars.dicebear.com/api/initials/${encodeURIComponent(item.nome)}.svg`} alt={item.nome} />
           </div>
           <div>
-            <p className="font-medium">{item.name}</p>
+            <p className="font-medium">{item.nome}</p>
             <p className="text-xs text-muted-foreground">ID: {item.id}</p>
           </div>
         </div>

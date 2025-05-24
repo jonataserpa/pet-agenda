@@ -7,7 +7,7 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   const getStatusColor = () => {
-    switch (status.toLowerCase()) {
+    switch (status && status.toLowerCase()) {
       case "emitida":
       case "confirmado":
       case "normal":

@@ -83,19 +83,25 @@ export function ClientFormModal({ isOpen, onClose, onSave, client }: ClientFormM
     }
   }
 
-  const validateField = (field: string, value: string) => {
+  const validateField = (field: string, value: string | never[]) => {
     let error = ""
+
+    // Convert value to string if it's an array
+    const stringValue = Array.isArray(value) ? value.join('') : value;
 
     switch (field) {
       case "nome":
-        if (!value.trim()) error = "Nome é obrigatório"
+        if (!stringValue.trim()) error = "Nome é obrigatório"
         break
       case "email":
-        if (!value.trim()) {
+        if (!stringValue.trim()) {
           error = "Email é obrigatório"
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(stringValue)) {
           error = "Email inválido"
         }
+        break
+      case "telefone":
+        if (!stringValue.trim()) error = "Telefone é obrigatório"
         break
       default:
         break

@@ -158,4 +158,16 @@ export const appointmentService = {
       throw error;
     }
   },
+
+  async getDashboardData() {
+    console.log('AppointmentService: Buscando dados do dashboard do backend');
+    try {
+      const { data } = await appointmentApi.get('/dashboard');
+      console.log('AppointmentService: Dados do dashboard recebidos:', data);
+      return data;
+    } catch (error) {
+      console.error('AppointmentService: Erro ao buscar dados do dashboard:', error);
+      throw error;
+    }
+  },
 }; 

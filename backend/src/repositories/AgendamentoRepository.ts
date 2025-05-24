@@ -73,6 +73,12 @@ export class AgendamentoRepository {
   }
 
   async delete(id: number): Promise<boolean> {
+    // Remover todas as referências na tabela AgendamentoServico
+    await this.prisma.agendamentoServico.deleteMany({
+      where: { agendamentoId: id },
+    });
+
+    // Agora, excluir o agendamento
     await this.prisma.agendamento.delete({
       where: { id },
     });
