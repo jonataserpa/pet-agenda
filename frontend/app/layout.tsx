@@ -10,9 +10,9 @@ import { ProtectedRoute } from "@/components/auth/protected-route"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Gestão Total",
-  description: "Sistema de gestão empresarial completo",
-    generator: 'v0.dev'
+  title: "Pet Agenda",
+  description: "Sistema de agendamento de serviços para pets",
+  generator: 'v0.dev'
 }
 
 export default function RootLayout({

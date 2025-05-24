@@ -110,7 +110,7 @@ export function Header({ title, subtitle }: HeaderProps) {
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2 rounded-full hover:bg-accent p-1 pr-2 outline-none">
               <Avatar>
-                <AvatarImage src="/placeholder.svg" alt={usuario?.nome || 'Usuário'} />
+                <AvatarImage src={`https://ui-avatars.com/api/?uppercase=false&name=${encodeURIComponent(usuario?.nome || '')}`} alt={usuario?.nome || 'Usuário'} />
                 <AvatarFallback>
                   {getInitials(usuario?.nome || '')}
                 </AvatarFallback>
@@ -123,14 +123,6 @@ export function Header({ title, subtitle }: HeaderProps) {
                 <span className="font-medium text-foreground">{usuario?.email}</span>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
-                <span>Meu Perfil</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Configurações</span>
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="cursor-pointer text-red-600" onClick={logout}>
                 <LogOut className="mr-2 h-4 w-4" />

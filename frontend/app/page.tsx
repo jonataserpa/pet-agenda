@@ -74,7 +74,7 @@ export default function Dashboard() {
               <div key={appointment.id} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-muted overflow-hidden">
-                    <img src={`https://avatars.dicebear.com/api/initials/${encodeURIComponent(appointment.clientName)}.svg`} alt={appointment.clientName} />
+                    <img src={`https://ui-avatars.com/api/?uppercase=false&name=${encodeURIComponent(appointment.clientName)}`} alt={appointment.clientName} />
                   </div>
                   <div>
                     <p className="font-medium">{appointment.clientName}</p>

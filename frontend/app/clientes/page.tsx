@@ -117,7 +117,7 @@ export default function ClientesPage() {
       cell: (item: any) => (
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-full bg-gray-200 overflow-hidden">
-            <img src={`https://avatars.dicebear.com/api/initials/${encodeURIComponent(item.nome)}.svg`} alt={item.nome} />
+            <img src={`https://ui-avatars.com/api/?uppercase=false&name=${encodeURIComponent(item.nome)}`} alt={item.nome} />
           </div>
           <div>
             <p className="font-medium">{item.nome}</p>
