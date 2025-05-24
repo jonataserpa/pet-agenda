@@ -34,4 +34,34 @@ export const serviceService = {
       throw error;
     }
   },
+
+  async save(servico: any) {
+    console.log('ServiceService: Salvando serviço', servico);
+    try {
+      if (servico.id) {
+        const { data } = await serviceApi.put(`/servicos/${servico.id}`, servico);
+        console.log('ServiceService: Serviço atualizado:', data);
+        return data;
+      } else {
+        const { data } = await serviceApi.post('/servicos', servico);
+        console.log('ServiceService: Serviço criado:', data);
+        return data;
+      }
+    } catch (error) {
+      console.error('ServiceService: Erro ao salvar serviço:', error);
+      throw error;
+    }
+  },
+
+  async delete(id: number) {
+    console.log(`ServiceService: Excluindo serviço ${id}`);
+    try {
+      const { data } = await serviceApi.delete(`/servicos/${id}`);
+      console.log('ServiceService: Serviço excluído');
+      return data;
+    } catch (error) {
+      console.error(`ServiceService: Erro ao excluir serviço ${id}:`, error);
+      throw error;
+    }
+  }
 }; 

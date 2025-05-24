@@ -10,6 +10,16 @@ const petApi = axios.create({
   },
 });
 
+interface Pet {
+  id?: number;
+  nome: string;
+  especie: string;
+  raca: string;
+  idade: number;
+  peso: number;
+  clienteId: number;
+}
+
 export const petService = {
   async list() {
     console.log('PetService: Buscando lista de pets do backend');
@@ -33,5 +43,22 @@ export const petService = {
       console.error(`PetService: Erro ao buscar pet ${id}:`, error);
       throw error;
     }
+  },
+
+  async save(pet: Pet) {
+    if (pet.id) {
+      // Update existing pet
+      const response = await petApi.put(`/pets/${pet.id}`, pet);
+      return response.data;
+    } else {
+      // Create new pet
+      const response = await petApi.post('/pets', pet);
+      return response.data;
+    }
+  },
+
+  async delete(petId: number) {
+    const response = await petApi.delete(`/pets/${petId}`);
+    return response.data;
   },
 }; 

@@ -21,6 +21,16 @@ const sidebarItems = [
     label: "Agendamentos",
     href: "/agendamentos",
   },
+  {
+    icon: ShoppingBag,
+    label: "Pets",
+    href: "/pets",
+  },
+  {
+    icon: Package,
+    label: "Serviços",
+    href: "/servicos",
+  },
 ]
 
 export function Sidebar() {

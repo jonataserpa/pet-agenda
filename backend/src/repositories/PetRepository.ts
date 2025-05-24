@@ -46,7 +46,10 @@ export class PetRepository {
     
     return this.prisma.pet.update({
       where: { id },
-      data: petData,
+      data: {
+        ...petData,
+        id: Number(petData.id), // Certifique-se de que o id é um número
+      },
     });
   }
 
