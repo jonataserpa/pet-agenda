@@ -24,7 +24,8 @@ async function main() {
       nome: 'João Silva',
       email: 'joao@email.com',
       telefone: '(11) 99999-1111',
-      senha: senhaComum
+      senha: senhaComum,
+      observacao: 'Cliente de teste'
     }
   });
 
@@ -33,7 +34,8 @@ async function main() {
       nome: 'Maria Souza',
       email: 'maria@email.com',
       telefone: '(11) 99999-2222',
-      senha: senhaComum
+      senha: senhaComum,
+      observacao: 'Cliente de teste'
     }
   });
 
@@ -42,7 +44,8 @@ async function main() {
       nome: 'Pedro Oliveira',
       email: 'pedro@email.com',
       telefone: '(11) 99999-3333',
-      senha: senhaComum
+      senha: senhaComum,
+      observacao: 'Cliente de teste'
     }
   });
 
@@ -137,6 +140,7 @@ async function main() {
     data: {
       data: new Date(agora.setDate(agora.getDate() + 1)),
       status: 'AGENDADO',
+      observacao: 'Agendamento de teste',
       petId: pet1.id
     }
   });
@@ -145,6 +149,7 @@ async function main() {
     data: {
       data: new Date(agora.setDate(agora.getDate() + 1)),
       status: 'AGENDADO',
+      observacao: 'Agendamento de teste',
       petId: pet3.id
     }
   });
@@ -153,6 +158,7 @@ async function main() {
     data: {
       data: new Date(agora.setDate(agora.getDate() + 2)),
       status: 'AGENDADO',
+      observacao: 'Agendamento de teste',
       petId: pet2.id
     }
   });
@@ -161,6 +167,7 @@ async function main() {
     data: {
       data: new Date(agora.setDate(agora.getDate() - 5)),
       status: 'CONCLUIDO',
+      observacao: 'Agendamento de teste',
       petId: pet4.id
     }
   });
